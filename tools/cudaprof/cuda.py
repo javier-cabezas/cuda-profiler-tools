@@ -18,8 +18,8 @@
 
 import copy
 
-import core.common as common
-import core.libs   as libs
+import common
+import libs
 
 C = libs.C
 

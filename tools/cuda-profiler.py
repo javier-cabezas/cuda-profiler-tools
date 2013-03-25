@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import core
+import cudaprof
 from datetime import datetime
 
 def now():
@@ -59,19 +59,19 @@ if __name__=="__main__":
     OPTION_OUT_FILE_PATTERN = args['out'] 
 
     # Initialize CUDA
-    core.cuda.init()
+    cudaprof.cuda.init()
 
     # Create counters
-    options = core.cuda.get_options()
+    options = cudaprof.cuda.get_options()
     # Create counters
-    counters = core.cuda.get_counters(False)
+    counters = cudaprof.cuda.get_counters(False)
     # Read counters from configuration file
-    options_conf, counters_conf = core.io.get_conf_from_file(OPTION_CONF_FILE)
+    options_conf, counters_conf = cudaprof.io.get_conf_from_file(OPTION_CONF_FILE)
 
     # Merged options with configuration file
-    core.init_options(options, options_conf)
+    cudaprof.init_options(options, options_conf)
     # Merged counters with configuration file
-    core.init_counters(counters, counters_conf)
+    cudaprof.init_counters(counters, counters_conf)
 
     if OPTION_GRAPHICAL == False:
         # Collect enabled options
@@ -93,7 +93,7 @@ if __name__=="__main__":
 
         core.runner.launch_groups(OPTION_CMD, OPTION_CMD_ARGS, enabled_options, groups, progress)
     else:
-        import gui
+        import cudaprof.gui as gui
 
         gui.start(options, counters, OPTION_CONF_FILE, OPTION_CMD, OPTION_CMD_ARGS)
 

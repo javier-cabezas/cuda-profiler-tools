@@ -23,7 +23,7 @@ from datetime import datetime
 from gi.repository import Gtk
 from gi.repository import Gdk
 
-import core
+import cudaprof
 
 def now():
     time = datetime.time(datetime.now())
@@ -349,16 +349,16 @@ class MainWindow(Gtk.Window):
         
     def on_load_clicked(self, button):
         # Create counters
-        self.options = core.cuda.get_options()
+        self.options = cudaprof.cuda.get_options()
         # Reset counters
-        self.domains = core.cuda.get_counters(False)
+        self.domains = cudaprof.cuda.get_counters(False)
         # Load from file
-        options_file, counters_file = core.io.get_conf_from_file(self.current_conf_in)
+        options_file, counters_file = cudaprof.io.get_conf_from_file(self.current_conf_in)
 
         # Merge options from file
-        core.init_options(self.options, options_file)
+        cudaprof.init_options(self.options, options_file)
         # Merge counters from file
-        core.init_counters(self.domains, counters_file)
+        cudaprof.init_counters(self.domains, counters_file)
         # Update checkboxes with the new values
         self.notebook_domains.update_conf(self.options, self.domains)
 
@@ -369,7 +369,7 @@ class MainWindow(Gtk.Window):
 
     def on_save_clicked(self, button):
         # Write to file
-        core.io.put_conf_to_file(self.current_conf_out, self.options, self.domains)
+        cudaprof.io.put_conf_to_file(self.current_conf_out, self.options, self.domains)
 
         buf = self.label_log.get_buffer()
         buf.insert(buf.get_start_iter(), "%s: Saved configuration file '%s'\n" % (now(),
@@ -386,7 +386,7 @@ class MainWindow(Gtk.Window):
         cmd  = self.entry_cmd.get_text()
         args = self.entry_args.get_text()
         
-        groups = core.cuda.get_event_groups(enabled_counters)
+        groups = cudaprof.cuda.get_event_groups(enabled_counters)
         buf = self.label_log.get_buffer()
         buf.insert(buf.get_start_iter(), "%s: BEGIN PROFILE: Command: '%s %s'\n" % (now(), cmd, args))
 
@@ -408,7 +408,7 @@ class MainWindow(Gtk.Window):
 
         progress = print_progress(len(groups))
 
-        core.runner.launch_groups(cmd, args, enabled_options, groups, progress)
+        cudaprof.runner.launch_groups(cmd, args, enabled_options, groups, progress)
 
         buf.insert(buf.get_start_iter(), "%s: END PROFILE\n" % now())
 
