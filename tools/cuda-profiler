@@ -80,7 +80,7 @@ if __name__=="__main__":
         enabled_counters = [ counter for domain, _counters in counters.items()
                                      for counter in _counters if counter.active == True ]
 
-        groups = core.cuda.get_event_groups(enabled_counters)
+        groups = cudaprof.cuda.get_event_groups(enabled_counters)
 
         def print_progress(n):
             i = 1
@@ -91,7 +91,7 @@ if __name__=="__main__":
 
         progress = print_progress(len(groups))
 
-        core.runner.launch_groups(OPTION_CMD, OPTION_CMD_ARGS, enabled_options, groups, progress)
+        cudaprof.runner.launch_groups(OPTION_CMD, OPTION_CMD_ARGS, enabled_options, groups, progress)
     else:
         import cudaprof.gui as gui
 
