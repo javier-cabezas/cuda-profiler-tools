@@ -163,6 +163,9 @@ def get_counters(by_domain):
 
 
 def get_event_groups(counters):
+    if len(counters) == 0:
+        return [[]]
+
     counter_groups = []
     # Collect event id's
     event_ids = [ event.id for event in counters ]

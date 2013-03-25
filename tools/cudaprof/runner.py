@@ -85,8 +85,6 @@ def merge_files(output, input_files):
 
 
 def launch_group(cmd, args, options, group, **kwargs):
-    assert len(group) > 0, 'Empty counter group'
-
     csv      = kwargs.get('csv', True)
     out_dir  = kwargs.get('out_dir', './')
     out_file = out_dir + '/cuda_profile_%p_%d.log'
@@ -128,8 +126,8 @@ def launch_group(cmd, args, options, group, **kwargs):
 def launch_groups(cmd, args, options, groups, progress = None, **kwargs):
     assert len(groups) > 0, 'Empty counter group'
 
-    csv       = kwargs.get('csv', True)
-    out_file  = kwargs.get('out_file', 'cuda_profile_%d.log')
+    csv              = kwargs.get('csv', True)
+    out_file_pattern = kwargs.get('out_file', 'cuda_profile_%d.log')
 
     pid = os.getpid()
 
@@ -161,9 +159,9 @@ def launch_groups(cmd, args, options, groups, progress = None, **kwargs):
         for group_pid in group_pids:
             files.append(tempdir + '/cuda_profile_%d_%d.log' % (group_pid, gpu))
 
-        column, lines = merge_files('cuda_profile_%d.log' % gpu, files)
+        column, lines = merge_files(out_file_pattern % gpu, files)
         
-        f = open('cuda_profile_%d.log' % gpu, 'w')
+        f = open(out_file_pattern % gpu, 'w')
 
         f.write(','.join(column) + '\n')
 
