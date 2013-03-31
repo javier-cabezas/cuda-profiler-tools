@@ -91,7 +91,12 @@ if __name__=="__main__":
 
         progress = print_progress(len(groups))
 
-        cudaprof.runner.launch_groups(OPTION_CMD, OPTION_CMD_ARGS, enabled_options, groups, progress, out_file = OPTION_OUT_FILE_PATTERN)
+        cudaprof.runner.launch_groups(OPTION_CMD,
+                                      OPTION_CMD_ARGS,
+                                      enabled_options,
+                                      groups,
+                                      progress,
+                                      out_file = OPTION_OUT_FILE_PATTERN)
     else:
         import cudaprof.gui as gui
 

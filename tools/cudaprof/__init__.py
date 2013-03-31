@@ -28,30 +28,20 @@ def init_options(options_new, options_saved):
     assert isinstance(options_saved, list), 'Wrong contents in options'
 
     # Initialize on values with the ones stored in the file (if any)
-    for option_saved in options_saved:
-        assert isinstance(option_saved, Option), 'Wrong contents in list'
-
-        option = [ option for option in options_new if option.name == option_saved.name ]
-        if len(option) == 1:
-            option[0].set_active(option_saved.active)
+    for option_new in options_new:
+        option_saved = [ option for option in options_saved if option.name == option_new.name ]
+        if len(option_saved) == 1:
+            option_new.set_active(option_saved[0].active)
 
 
 def init_counters(counters_new, counters_saved):
     # Initialize counter values with the ones stored in the file (if any)
-    for domain, counters in counters_saved.items():
-        assert isinstance(counters, list), 'Wrong contents in dict'
-
+    for domain, counters in counters_new.items():
         # Only merge those counters found in both dictionaries
-        if domain in counters_new.keys():
-            my_counters = counters_new[domain]
-
-            for saved in counters:
-                assert isinstance(saved, Counter), 'Wrong contents in dict'
-
-                counter = [ counter for counter in my_counters if counter.name == saved.name ]
-                if len(counter) == 1:
-                    counter = counter[0]
-                    counter.set_active(saved.active)
+        for counter_new in counters:
+            counter_saved = [ counter for counter in counters_saved if counter.name == counter_new.name ]
+            if len(counter_saved) == 1:
+                counter_new.set_active(counter_saved[0].active)
 
 
 def print_counters(tag, counters):

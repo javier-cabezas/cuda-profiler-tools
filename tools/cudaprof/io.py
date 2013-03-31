@@ -16,54 +16,61 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import cPickle
 import os
 import sys
 
+import ConfigParser
+
+class OptionDescr:
+    def __init__(self, name, active):
+        self.name    = name
+        self.active = active
+
+class CounterDescr:
+    def __init__(self, name, active):
+        self.name    = name
+        self.active = active
+
 def get_conf_from_file(counter_file):
     saved_options  = []
-    saved_counters = {}
+    saved_counters = []
 
-    if counter_file != None:
-        if os.path.isfile(counter_file):
-            try:
-                # Open configuration file
-                f_in = open(counter_file, 'r')
-            except IOError:
-                print 'Error opening file %s' % (counter_file)
-                sys.exit(-1)
+    if counter_file == None:
+        return saved_options, saved_counters
 
-            try:
-                # Load configuration file contents
-                saved_options = cPickle.load(f_in)
-                saved_counters = cPickle.load(f_in)
-                assert isinstance(saved_counters, dict), 'Wrong contents in file %s' % (counter_file)
-            except:
-                print 'Error wrong contents in file %s' % (counter_file)
-                sys.exit(-1)
+    config = ConfigParser.RawConfigParser()
+    config.read(counter_file)
 
-            # Close configuration file
-            f_in.close()
-        else:
-            print 'Error %s is not a valid file' % (counter_file)
-            sys.exit(-1)
+    for option, active in config.items('Options'):
+        saved_options.append(OptionDescr(option, bool(int(active))))
+    
+    for counter, active in config.items('Counters'):
+        saved_counters.append(CounterDescr(counter, bool(int(active))))
 
     return saved_options, saved_counters
 
 
-def put_conf_to_file(counter_file, options, counters):
+def put_conf_to_file(counter_file, options, domains):
+    config = ConfigParser.RawConfigParser()
+
+    config.add_section('Options')
+
+    for option in options:
+        config.set('Options', option.name, '%d' % option.active)
+
+    config.add_section('Counters')
+
+    for name, counters in domains.items():
+        for counter in counters:
+            config.set('Counters', counter.name, '%d' % counter.active)
+
     try:
-        f_out = open(counter_file, 'w')
+        f_out = open(counter_file, 'wb')
     except IOError:
         print 'Error opening file %s' % (counter_file)
         sys.exit(-1)
 
-    try:
-        cPickle.dump(options, f_out)
-        cPickle.dump(counters, f_out)
-    except:
-        print 'Error wrong contents in file %s' % (counter_file)
-        sys.exit(-1)
+    config.write(f_out)
 
     f_out.close()
 

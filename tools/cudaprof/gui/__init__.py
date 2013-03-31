@@ -378,7 +378,7 @@ class MainWindow(Gtk.Window):
 
         buf = self.label_log.get_buffer()
         buf.insert(buf.get_start_iter(), "%s: Loaded configuration file '%s'\n" % (now(),
-                                                                                    self.current_conf_in))
+                                                                                   self.current_conf_in))
 
 
     def on_save_clicked(self, button):
@@ -387,7 +387,7 @@ class MainWindow(Gtk.Window):
 
         buf = self.label_log.get_buffer()
         buf.insert(buf.get_start_iter(), "%s: Saved configuration file '%s'\n" % (now(),
-                                                                                   self.current_conf_out))
+                                                                                  self.current_conf_out))
 
 
     def on_profile_clicked(self, button):
