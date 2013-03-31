@@ -33,9 +33,9 @@ PROFILER_OPTIONS = {
     'gpustarttimestamp'     : common.Option('gpustarttimestamp'     ),
     'gpuendtimestamp'       : common.Option('gpuendtimestamp'       ),
     'timestamp'             : common.Option('timestamp'             ),
-    'gridsize'              : common.Option('gridsize'              , 2),
-    'gridsize3d'            : common.Option('gridsize3d'            , 3),
-    'threadblocksize'       : common.Option('threadblocksize'       , 3),
+    'gridsize'              : common.Option('gridsize'              ),
+    'gridsize3d'            : common.Option('gridsize3d'            ),
+    'threadblocksize'       : common.Option('threadblocksize'       ),
     'dynsmemperblock'       : common.Option('dynsmemperblock'       ),
     'stasmemperblock'       : common.Option('stasmemperblock'       ),
     'regperthread'          : common.Option('regperthread'          ),
@@ -45,9 +45,9 @@ PROFILER_OPTIONS = {
     'streamid'              : common.Option('streamid'              ),
     'cacheconfigrequested'  : common.Option('cacheconfigrequested'  ),
     'cacheconfigexecuted'   : common.Option('cacheconfigexecuted'   ),
-    'countermodeaggregate'  : common.Option('countermodeaggregate'  , 0),
-    'conckerneltrace'       : common.Option('conckerneltrace'       , 0),
-    'enableonstart'         : common.Option('enableonstart'         , 0, 1)
+    'countermodeaggregate'  : common.Option('countermodeaggregate'  ),
+    'conckerneltrace'       : common.Option('conckerneltrace'       ),
+    'enableonstart'         : common.Option('enableonstart'         , 1)
 }
 
 _DEFAULT_OPTIONS_NAMES = [ 'timestamp', 'gridsize3d', 'threadblocksize', 'dynsmemperblock', 'stasmemperblock', 'regperthread', 'streamid' ]

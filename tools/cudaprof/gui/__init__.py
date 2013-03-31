@@ -126,8 +126,12 @@ class MainWindow(Gtk.Window):
 
         self.initialized = False
 
-        self.current_conf_in = conf_file
-        self.current_conf_out = conf_file
+        if conf_file != None:
+            self.current_conf_in  = os.path.abspath(conf_file)
+            self.current_conf_out = os.path.abspath(conf_file)
+        else:
+            self.current_conf_in  = None
+            self.current_conf_out = None
 
         # Add box
         self.box = Gtk.VBox()
@@ -180,12 +184,18 @@ class MainWindow(Gtk.Window):
         self.button_save_choose = Gtk.Button()
         self.button_save_choose.set_image(image_save)
 
+        homedir = os.path.expanduser("~")
+
         if conf_file != None:
-            self.entry_conf_in.set_text(os.path.abspath(self.current_conf_in))
-            self.entry_conf_out.set_text(os.path.abspath(self.current_conf_out))
+            path_in = self.current_conf_in.replace(homedir, '~')
+            self.entry_conf_in.set_text(path_in)
+            path_out = self.current_conf_out.replace(homedir, '~')
+            self.entry_conf_out.set_text(path_out)
         else:
-            self.entry_conf_in.set_text(os.getcwd() + '/')
-            self.entry_conf_out.set_text(os.getcwd() + '/')
+            path = os.getcwd() + '/'
+            path = path.replace(homedir, '~')
+            self.entry_conf_in.set_text(path)
+            self.entry_conf_out.set_text(path)
 
         self.button_load = Gtk.Button('Load')
         self.button_save = Gtk.Button('Save')
@@ -282,18 +292,22 @@ class MainWindow(Gtk.Window):
     def on_path_in_changed(self, entry):
         path = entry.get_text()
 
-        self.current_conf_in = path
-        self.button_load.set_sensitive(os.path.isfile(path))
+        path_nouser = os.path.expanduser(path)
+        path_novars = os.path.expanduser(path_nouser)
+        self.current_conf_in = path_novars
+        self.button_load.set_sensitive(os.path.isfile(path_novars))
 
     def on_path_out_changed(self, entry):
         path = entry.get_text()
 
-        self.current_conf_out = path
-        dirname = os.path.dirname(path)
+        path_nouser = os.path.expanduser(path)
+        path_novars = os.path.expanduser(path_nouser)
+        self.current_conf_out = path_novars
+        dirname = os.path.dirname(self.current_conf_out)
 
         is_dir = False
         try:
-            is_dir = os.path.samefile(dirname, path) or os.path.isdir(path)
+            is_dir = os.path.samefile(dirname, self.current_conf_out) or os.path.isdir(self.current_conf_out)
         except OSError:
             # Ignore
             pass

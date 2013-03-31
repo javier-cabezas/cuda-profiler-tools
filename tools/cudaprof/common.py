@@ -21,10 +21,9 @@ def enum(**enums):
 
 
 class Option:
-    def __init__(self, name, out = 1, value = None):
+    def __init__(self, name, value = None):
         self.name        = name
         self.description = "" # TODO: fill this field
-        self.out         = out
         self.value       = value
 
         self.active = False
