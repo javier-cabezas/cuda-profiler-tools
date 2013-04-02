@@ -89,35 +89,40 @@ def launch_group(cmd, args, options, group, **kwargs):
     out_dir  = kwargs.get('out_dir', './')
     out_file = out_dir + '/cuda_profile_%p_%d.log'
 
-    # Fill config file
-    _f, f_name = tempfile.mkstemp(text = True)
+    lines = len(options) + len(group)
 
-    f = os.fdopen(_f, 'w')
+    if lines > 0:
+        # Fill config file
+        _f, f_name = tempfile.mkstemp(text = True)
 
-    for option in options:
-        f.write('%s\n' % option)
+        f = os.fdopen(_f, 'w')
 
-    for counter in group:
-        f.write('%s\n' % counter.name)
+        for option in options:
+            f.write('%s\n' % option)
 
-    f.close()
+        for counter in group:
+            f.write('%s\n' % counter.name)
+
+        f.close()
+        
+        os.environ['COMPUTE_PROFILE_CONFIG'] = f_name
 
     # Modify the environment
-    os.environ['COMPUTE_PROFILE']        = '1'
-    os.environ['COMPUTE_PROFILE_CONFIG'] = f_name
-    os.environ['COMPUTE_PROFILE_CSV']    = '%d' % csv
-    os.environ['COMPUTE_PROFILE_LOG']    = out_file
+    os.environ['COMPUTE_PROFILE']     = '1'
+    os.environ['COMPUTE_PROFILE_CSV'] = '%d' % csv
+    os.environ['COMPUTE_PROFILE_LOG'] = out_file
 
     # Execute the program
     p = proc.Popen([cmd] + args.split(' '), stdout = proc.PIPE, stderr = proc.PIPE, env = os.environ)
     pid = p.pid
     p.wait()
     
-    # Remove temporary file
-    try:
-        os.remove(f_name)
-    except OSError:
-        print 'Error removing temporary file for conf "%s"' % f_name
+    if lines > 0:
+        # Remove temporary file
+        try:
+            os.remove(f_name)
+        except OSError:
+            print 'Error removing temporary file for conf "%s"' % f_name
 
     return pid
 
