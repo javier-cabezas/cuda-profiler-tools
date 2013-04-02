@@ -1,9 +1,18 @@
+cuda-profiler-tools (0.3.0-1) unstable; urgency=low
+
+  * New upstream version.
+  * Added terminal GUI module.
+  * Use subcommands in the command line-parsing
+  * Add subcommand to create a configuration file
+
+ -- Javier Cabezas <javier.cabezas@gmail.com>  Tue, 1 Apr 2013 17:20:46 +0100
+
 cuda-profiler-tools (0.2.0-1) unstable; urgency=low
 
   * New upstream version. Changed the format of the configuration to
     key/value text files.
 
- -- Javier Cabezas <javier.cabezas@gmail.com>  Mon, 31 Mar 2013 18:38:46 +0100
+ -- Javier Cabezas <javier.cabezas@gmail.com>  Sun, 31 Mar 2013 18:38:46 +0100
 
 cuda-profiler-tools (0.1.1-1) unstable; urgency=low
 
