@@ -130,7 +130,7 @@ def launch_groups(cmd, args, options, groups, progress = None, **kwargs):
     assert len(groups) > 0, 'Empty counter group'
 
     csv              = kwargs.get('csv', True)
-    out_file_pattern = kwargs.get('out_file', 'cuda_profile_%d.log')
+    out_file_pattern = kwargs.get('out_pattern', 'cuda_profile_%d.log')
 
     pid = os.getpid()
 

@@ -32,8 +32,6 @@ class NotebookDomains(Gtk.Notebook):
 
         self.parent = parent
 
-        self.active_counters = 0
-    
         self.checkboxes_opts = {}
         self.checkboxes = {}
 
@@ -94,15 +92,6 @@ class NotebookDomains(Gtk.Notebook):
         assert len(data) == 1
         counter = data[0]
         counter.set_active(check_counter.get_active())
-
-        if check_counter.get_active():
-            self.active_counters += 1
-        else:
-            self.active_counters -= 1
-
-        if self.parent.initialized:
-            self.parent.on_counter_toggled(self.active_counters)
-    
     
     def update_conf(self, options, counters):
         for option in options: 
@@ -115,8 +104,14 @@ class NotebookDomains(Gtk.Notebook):
                 self.checkboxes[counter.name].set_active(counter.active)
 
 
+def get_abspath(path):
+    path_nouser = os.path.expanduser(path)
+    path_novars = os.path.expanduser(path_nouser)
+    return os.path.abspath(path_novars)
+
+
 class MainWindow(Gtk.Window):
-    def __init__(self, options, domains, conf_file, cmd, args):
+    def __init__(self, options, domains, conf_file, cmd, args, out_pattern):
         Gtk.Window.__init__(self, title="CUDA Profiler Configuration Tool")
         self.options = copy.deepcopy(options)
         self.domains = copy.deepcopy(domains)
@@ -124,11 +119,14 @@ class MainWindow(Gtk.Window):
         self.initialized = False
 
         if conf_file != None:
-            self.current_conf_in  = os.path.abspath(conf_file)
-            self.current_conf_out = os.path.abspath(conf_file)
+            self.current_conf_in  = get_abspath(conf_file)
+            self.current_conf_out = get_abspath(conf_file)
         else:
             self.current_conf_in  = None
             self.current_conf_out = None
+
+        self.current_cmd         = get_abspath(cmd)
+        self.current_out_pattern = get_abspath(out_pattern)
 
         # Add box
         self.box = Gtk.VBox()
@@ -153,6 +151,8 @@ class MainWindow(Gtk.Window):
         self.box_cmdline.pack_start(self.box_cmd, False, False, 0)
         self.box_args = Gtk.HBox()
         self.box_cmdline.pack_start(self.box_args, False, False, 0)
+        self.box_out_pattern = Gtk.HBox()
+        self.box_cmdline.pack_start(self.box_out_pattern, False, False, 0)
 
         self.box.pack_start(self.box_cmdline, False, False, 0)
 
@@ -180,19 +180,6 @@ class MainWindow(Gtk.Window):
 
         self.button_save_choose = Gtk.Button()
         self.button_save_choose.set_image(image_save)
-
-        homedir = os.path.expanduser("~")
-
-        if conf_file != None:
-            path_in = self.current_conf_in.replace(homedir, '~')
-            self.entry_conf_in.set_text(path_in)
-            path_out = self.current_conf_out.replace(homedir, '~')
-            self.entry_conf_out.set_text(path_out)
-        else:
-            path = os.getcwd() + '/'
-            path = path.replace(homedir, '~')
-            self.entry_conf_in.set_text(path)
-            self.entry_conf_out.set_text(path)
 
         self.button_load = Gtk.Button('Load')
         self.button_save = Gtk.Button('Save')
@@ -223,19 +210,41 @@ class MainWindow(Gtk.Window):
         self.label_cmd.set_justify(Gtk.Justification.LEFT)
         self.label_args = Gtk.Label('Arguments')
         self.label_args.set_justify(Gtk.Justification.LEFT)
+        self.label_out_pattern = Gtk.Label('Output files')
+        self.label_out_pattern.set_justify(Gtk.Justification.LEFT)
 
         self.entry_cmd = Gtk.Entry()
-        self.entry_cmd.set_text(os.path.abspath(cmd))
         self.entry_args = Gtk.Entry()
         self.entry_args.set_text(args)
+        self.entry_out_pattern = Gtk.Entry()
 
         # Add cmd and args to the box
         self.box_cmd.pack_start(self.label_cmd, False, False, 0)
         self.box_cmd.pack_end(self.entry_cmd, True, True, 0)
         self.box_args.pack_start(self.label_args, False, False, 0)
         self.box_args.pack_end(self.entry_args, True, True, 0)
+        self.box_out_pattern.pack_start(self.label_out_pattern, False, False, 0)
+        self.box_out_pattern.pack_end(self.entry_out_pattern, True, True, 0)
 
         self.box_profile.pack_end(self.button_profile, False, False, 0)
+
+        homedir = os.path.expanduser("~")
+
+        if conf_file != None:
+            path_in = self.current_conf_in.replace(homedir, '~')
+            self.entry_conf_in.set_text(path_in)
+            path_out = self.current_conf_out.replace(homedir, '~')
+            self.entry_conf_out.set_text(path_out)
+        else:
+            path = os.getcwd() + '/'
+            path = path.replace(homedir, '~')
+            self.entry_conf_in.set_text(path)
+            self.entry_conf_out.set_text(path)
+
+        path_cmd = self.current_cmd.replace(homedir, '~')
+        self.entry_cmd.set_text(path_cmd)
+        path_out_pattern = self.current_out_pattern.replace(homedir, '~')
+        self.entry_out_pattern.set_text(path_out_pattern)
 
         ##
         ## LOG
@@ -257,6 +266,7 @@ class MainWindow(Gtk.Window):
         # Set button/label sizes
         self.label_cmd.set_size_request(100, -1)
         self.label_args.set_size_request(100, -1)
+        self.label_out_pattern.set_size_request(100, -1)
 
         self.button_load.set_size_request(100, -1)
         self.button_save.set_size_request(100, -1)
@@ -274,9 +284,10 @@ class MainWindow(Gtk.Window):
         self.entry_conf_in.connect("changed", self.on_path_in_changed)
         self.entry_conf_out.connect("changed", self.on_path_out_changed)
 
+        self.entry_out_pattern.connect("changed", self.on_out_pattern_changed)
+
         self.entry_cmd.connect("changed", self.on_path_cmd_changed)
-        self.button_profile.set_sensitive(os.path.isfile(self.entry_cmd.get_text()) and
-                                          self.notebook_domains.active_counters > 0)
+        self.button_profile.set_sensitive(os.path.isfile(self.entry_cmd.get_text()))
 
         hints = Gdk.Geometry();
         hints.min_height = -1; # Current minimum size
@@ -289,17 +300,13 @@ class MainWindow(Gtk.Window):
     def on_path_in_changed(self, entry):
         path = entry.get_text()
 
-        path_nouser = os.path.expanduser(path)
-        path_novars = os.path.expanduser(path_nouser)
-        self.current_conf_in = path_novars
-        self.button_load.set_sensitive(os.path.isfile(path_novars))
+        self.current_conf_in = get_abspath(path)
+        self.button_load.set_sensitive(os.path.isfile(self.current_conf_in))
 
     def on_path_out_changed(self, entry):
         path = entry.get_text()
 
-        path_nouser = os.path.expanduser(path)
-        path_novars = os.path.expanduser(path_nouser)
-        self.current_conf_out = path_novars
+        self.current_conf_out = get_abspath(path)
         dirname = os.path.dirname(self.current_conf_out)
 
         is_dir = False
@@ -314,7 +321,19 @@ class MainWindow(Gtk.Window):
     def on_path_cmd_changed(self, entry):
         path = entry.get_text()
 
-        self.button_profile.set_sensitive(os.path.isfile(path))
+        self.current_cmd = get_abspath(path)
+
+        self.button_profile.set_sensitive(os.path.isfile(self.current_cmd))
+
+    def on_out_pattern_changed(self, entry):
+        path = entry.get_text()
+
+        self.current_out_pattern = get_abspath(path)
+        dirname = os.path.dirname(self.current_out_pattern)
+
+        is_dir = (path[-1] == '/')
+
+        self.button_profile.set_sensitive((not is_dir) and os.path.isdir(dirname) and cuda.is_valid_output_pattern(self.current_out_pattern))
 
     def on_choose_load_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", self,
@@ -419,17 +438,14 @@ class MainWindow(Gtk.Window):
 
         progress = print_progress(len(groups))
 
-        runner.launch_groups(cmd, args, enabled_options, groups, progress)
+        runner.launch_groups(self.current_cmd, args, enabled_options, groups, progress, out_pattern = self.current_out_pattern)
 
         buf.insert(buf.get_start_iter(), "%s> END PROFILE\n" % common.now())
 
-    def on_counter_toggled(self, num):
-        self.button_profile.set_sensitive(num > 0)
 
-
-def start(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_file):
+def start(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
     # Create window
-    win = MainWindow(options, counters, option_conf_file, option_cmd, option_cmd_args)
+    win = MainWindow(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_pattern)
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
 

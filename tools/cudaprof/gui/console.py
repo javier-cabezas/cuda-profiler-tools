@@ -20,7 +20,7 @@ import cudaprof.common as common
 import cudaprof.cuda   as cuda
 import cudaprof.runner as runner
 
-def start(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_file):
+def start(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
     # Collect enabled options
     enabled_options = [ option for option in options if option.active == True ]
     # Collect enabled events
@@ -43,7 +43,7 @@ def start(options, counters, option_conf_file, option_cmd, option_cmd_args, opti
                          enabled_options,
                          groups,
                          progress,
-                         out_file = option_out_file)
+                         out_pattern = option_out_pattern)
 
 
 # vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:
