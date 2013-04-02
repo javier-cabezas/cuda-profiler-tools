@@ -50,14 +50,6 @@ PROFILER_OPTIONS = {
     'enableonstart'         : common.Option('enableonstart'         , 1)
 }
 
-_DEFAULT_OPTIONS_NAMES = [ 'timestamp', 'gridsize3d', 'threadblocksize', 'dynsmemperblock', 'stasmemperblock', 'regperthread', 'streamid' ]
-DEFAULT_OPTIONS = copy.deepcopy(list(PROFILER_OPTIONS.values()))
-
-for option in DEFAULT_OPTIONS:
-    if option.name in _DEFAULT_OPTIONS_NAMES:
-        option.active = True
-
-
 def init():
     global CUDA_FAKE_CONTEXT
     global GPUS
@@ -85,9 +77,11 @@ def init():
     CUDA_FAKE_CONTEXT = C.c_void_p(0)
     libs.CUDA.cuCtxCreate_v2(C.byref(CUDA_FAKE_CONTEXT), 0, 0)
 
+def is_valid_output_pattern(pattern):
+    return pattern.count('%d') == 1
 
 def get_options():
-    return DEFAULT_OPTIONS
+    return copy.deepcopy(list(PROFILER_OPTIONS.values()))
 
 
 def get_counters(by_domain):

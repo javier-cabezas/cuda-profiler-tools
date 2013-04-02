@@ -18,7 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 import cudaprof
+import cudaprof.common as common
+import cudaprof.cuda   as cuda
+import cudaprof.io     as io
+
 from datetime import datetime
 
 def now():
@@ -30,27 +36,24 @@ def shell():
     from IPython import embed
     embed()
 
-if __name__=="__main__":
-    import argparse
-    import subprocess as proc
+ACTIONS = common.enum(TEMPLATE = 10,
+                      PROFILE  = 11)
 
-    parser = argparse.ArgumentParser(description = 'Profile CUDA programs')
-    parser.add_argument('cmdline', metavar='cmdline', type = str,
-                        help = 'Program to be profiled')
-    parser.add_argument('args', metavar='arg', type = str, nargs = '*',
-                        help = 'Argument to be passed to the program')
-    parser.add_argument('-g', '--graphical', dest = 'graphical', action='store_const',
-                        const = True, default = False,
-                        help = 'Show the graphical interface')
-    parser.add_argument('-c', '--conf', metavar='CONF_FILE', dest = 'conf', action='store',
-                        default = None,
-                        help = 'Configuration file')
-    parser.add_argument('-o', '--out', metavar='OUT_FILE_PATTERN', dest = 'out', action='store',
-                        default = 'cuda_profile_%d.log',
-                        help = 'Output file pattern')
+def do_template(args):
+    OPTION_CONF_FILE = args['tmpl_file']
 
-    args = vars(parser.parse_args())
+    # Initialize CUDA
+    cuda.init()
 
+    # Create counters
+    options = cuda.get_options()
+    # Create counters
+    counters = cuda.get_counters(False)
+    # Write to file
+    io.put_conf_to_file(OPTION_CONF_FILE, options, counters)
+
+
+def do_profile(args):
     OPTION_CMD       = args['cmdline']
     OPTION_CMD_ARGS  = ' '.join(args['args'])
 
@@ -59,19 +62,23 @@ if __name__=="__main__":
     OPTION_OUT_FILE_PATTERN = args['out'] 
 
     # Initialize CUDA
-    cudaprof.cuda.init()
+    cuda.init()
 
     # Create counters
-    options = cudaprof.cuda.get_options()
+    options = cuda.get_options()
     # Create counters
-    counters = cudaprof.cuda.get_counters(False)
+    counters = cuda.get_counters(False)
     # Read counters from configuration file
-    options_conf, counters_conf = cudaprof.io.get_conf_from_file(OPTION_CONF_FILE)
+    options_conf, counters_conf = io.get_conf_from_file(OPTION_CONF_FILE)
 
     # Merged options with configuration file
     cudaprof.init_options(options, options_conf)
     # Merged counters with configuration file
     cudaprof.init_counters(counters, counters_conf)
+
+    if not cuda.is_valid_output_pattern(OPTION_OUT_FILE_PATTERN):
+        print 'Invalid output file pattern. Remember that it must contain the %d wilcard to generate one output file per GPU.'
+        sys.exit(-1)
 
     if OPTION_GRAPHICAL == True:
         import cudaprof.gui.gtk as gui
@@ -79,4 +86,51 @@ if __name__=="__main__":
         import cudaprof.gui.console as gui
 
     gui.start(options, counters, OPTION_CONF_FILE, OPTION_CMD, OPTION_CMD_ARGS, OPTION_OUT_FILE_PATTERN)
+
+
+if __name__=="__main__":
+    import argparse
+    import subprocess as proc
+
+    action = None
+    def set_action(val):
+        global action
+        action = val
+
+    parser = argparse.ArgumentParser(description = 'Profile CUDA programs')
+
+    subparsers = parser.add_subparsers(title = 'subcommands',
+                                       description = 'valid subcommands',
+                                       help = 'sub-command help')
+
+    parser_t = subparsers.add_parser('template',
+                                     help = 'generate template configuration file')
+
+    parser_t.add_argument('tmpl_file', metavar='CONF_FILE', type = str,
+                          help = 'template configuration file to be generated')
+
+    parser_t.set_defaults(func = do_template)
+
+    parser_p = subparsers.add_parser('profile', help = 'profile the given program')
+
+    parser_p.add_argument('cmdline', metavar='PROGRAM', type = str,
+                          help = 'program to be profiled')
+    parser_p.add_argument('args', metavar='ARG', type = str, nargs = '*',
+                          help = 'argument to be passed to the program')
+    parser_p.add_argument('-g', '--graphical', dest = 'graphical', action='store_const',
+                          const = True, default = False,
+                          help = 'show the graphical interface')
+    parser_p.add_argument('-c', '--conf', metavar='CONF_FILE', dest = 'conf', action='store',
+                          default = None,
+                          help = 'configuration file')
+    parser_p.add_argument('-o', '--out', metavar='OUT_FILE_PATTERN', dest = 'out', action='store',
+                          default = 'cuda_profile_%d.log',
+                          help = 'output file pattern')
+
+    parser_p.set_defaults(func = do_profile)
+
+    args = parser.parse_args()
+    fun = args.func
+
+    fun(vars(args))
 
