@@ -107,14 +107,12 @@ def launch_group(cmd, args, options, group, **kwargs):
     os.environ['COMPUTE_PROFILE_CONFIG'] = f_name
     os.environ['COMPUTE_PROFILE_CSV']    = '%d' % csv
     os.environ['COMPUTE_PROFILE_LOG']    = out_file
-    
+
     # Execute the program
-    p = proc.Popen([cmd] + args.split(' '), stdout = proc.PIPE, stderr = proc.PIPE)
+    p = proc.Popen([cmd] + args.split(' '), stdout = proc.PIPE, stderr = proc.PIPE, env = os.environ)
     pid = p.pid
     p.wait()
-    # for line in p.stdout.readlines():
-    #     print line,
-
+    
     # Remove temporary file
     try:
         os.remove(f_name)
