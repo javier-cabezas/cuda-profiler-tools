@@ -73,32 +73,10 @@ if __name__=="__main__":
     # Merged counters with configuration file
     cudaprof.init_counters(counters, counters_conf)
 
-    if OPTION_GRAPHICAL == False:
-        # Collect enabled options
-        enabled_options = [ option for option in options if option.active == True ]
-        # Collect enabled events
-        enabled_counters = [ counter for domain, _counters in counters.items()
-                                     for counter in _counters if counter.active == True ]
-
-        groups = cudaprof.cuda.get_event_groups(enabled_counters)
-
-        def print_progress(n):
-            i = 1
-            while i <= n:
-                print "%s: Run %d/%d" % (now(), i, n)
-                i +=1
-                yield
-
-        progress = print_progress(len(groups))
-
-        cudaprof.runner.launch_groups(OPTION_CMD,
-                                      OPTION_CMD_ARGS,
-                                      enabled_options,
-                                      groups,
-                                      progress,
-                                      out_file = OPTION_OUT_FILE_PATTERN)
+    if OPTION_GRAPHICAL == True:
+        import cudaprof.gui.gtk as gui
     else:
-        import cudaprof.gui as gui
+        import cudaprof.gui.console as gui
 
-        gui.start(options, counters, OPTION_CONF_FILE, OPTION_CMD, OPTION_CMD_ARGS)
+    gui.start(options, counters, OPTION_CONF_FILE, OPTION_CMD, OPTION_CMD_ARGS, OPTION_OUT_FILE_PATTERN)
 

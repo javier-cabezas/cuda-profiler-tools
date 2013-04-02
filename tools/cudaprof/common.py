@@ -16,9 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from datetime import datetime
+
+def now():
+    time = datetime.time(datetime.now())
+    return time.strftime("%H:%M:%S")
+
 def enum(**enums):
     return type('Enum', (), enums)
-
 
 class Option:
     def __init__(self, name, value = None):
