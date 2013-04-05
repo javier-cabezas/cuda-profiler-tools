@@ -209,7 +209,60 @@ def get_event_groups(counters):
     return counter_groups
 
 
+def get_metrics():
+    metrics_ret = {}
 
+    # Get number of metrics
+    nmetrics = C.c_uint32()
+    libs.CUPTI.cuptiDeviceGetNumMetrics(0, C.byref(nmetrics))
+
+    # Enumerate metrics
+    metrics = (libs.CUPTI.metric_t * nmetrics.value)()
+    nbytes = C.c_size_t(nmetrics.value * C.sizeof(libs.CUPTI.metric_t))
+    libs.CUPTI.cuptiDeviceEnumMetrics(0, C.byref(nbytes),
+                                         C.cast(metrics, C.POINTER(libs.CUPTI.metric_t)))
+
+    # Iterate for each metric
+    p = C.create_string_buffer(MAX_STRING_LEN)
+    for metric in metrics:
+        nbytes = C.c_size_t(MAX_STRING_LEN)
+        libs.CUPTI.cuptiMetricGetAttribute(metric, libs.CUPTI.metric_attr.NAME, C.byref(nbytes), p)
+        name = p.value
+
+        nbytes = C.c_size_t(MAX_STRING_LEN)
+        libs.CUPTI.cuptiMetricGetAttribute(metric, libs.CUPTI.metric_attr.LONG_DESCRIPTION, C.byref(nbytes), p)
+        description = p.value
+
+        cat = C.c_int()
+        nbytes = C.c_size_t(C.sizeof(C.c_int))
+        libs.CUPTI.cuptiMetricGetAttribute(metric, libs.CUPTI.metric_attr.CATEGORY, C.byref(nbytes), C.byref(cat))
+        category = cat.value
+
+        # Get number of events for the metric
+        nevents = C.c_uint32()
+        libs.CUPTI.cuptiMetricGetNumEvents(metric, C.byref(nevents))
+
+        # Enumerate events
+        events = (libs.CUPTI.event_t * nevents.value)()
+        nbytes = C.c_size_t(nevents.value * C.sizeof(libs.CUPTI.event_t))
+        libs.CUPTI.cuptiMetricEnumEvents(metric, C.byref(nbytes),
+                                                 C.cast(events, C.POINTER(libs.CUPTI.event_t)))
+
+        for event in events:
+            nbytes = C.c_size_t(MAX_STRING_LEN)
+            libs.CUPTI.cuptiEventGetAttribute(event, libs.CUPTI.event_attr.NAME, C.byref(nbytes), p)
+
+        # Create a new Metric
+        m = common.Metric(name, description, category, metric, [ event for event in events ])
+
+        # Group per metric category
+        category = common.METRIC_CATEGORIES[m.category]
+        if not metrics_ret.has_key(category):
+            metrics_ret[category] = list()
+        else:
+            metrics_ret[category].append(m)
+
+    return metrics_ret
 
 
 # vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:

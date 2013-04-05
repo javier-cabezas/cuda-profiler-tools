@@ -91,6 +91,8 @@ def init_libcuda():
 
 def init_libcupti(): 
     # Interpose all needed CUPTI functions
+
+    # Events
     register_cupti(CUPTI.cuptiDeviceGetNumEventDomains,
                    [ CUDA.device_t, C.POINTER(C.c_uint32) ])
 
@@ -118,7 +120,19 @@ def init_libcupti():
     register_cupti(CUPTI.cuptiEventGroupGetAttribute,
                    [ C.c_void_p, C.c_int, C.POINTER(C.c_size_t), C.c_void_p ])
 
+    # Metrics
+    register_cupti(CUPTI.cuptiDeviceGetNumMetrics,
+                   [ CUDA.device_t, C.POINTER(C.c_uint32) ])
 
+    register_cupti(CUPTI.cuptiDeviceEnumMetrics,
+                   [ CUDA.device_t, C.POINTER(C.c_size_t), C.POINTER(CUPTI.metric_t) ])
+
+    register_cupti(CUPTI.cuptiMetricGetNumEvents,
+                   [ CUPTI.metric_t, C.POINTER(C.c_uint32) ])
+
+    register_cupti(CUPTI.cuptiMetricEnumEvents,
+                   [ CUPTI.metric_t, C.POINTER(C.c_size_t), C.POINTER(CUPTI.event_t) ])
+    
 
 def load_libraries():
     global CUDA
@@ -149,6 +163,9 @@ def load_libraries():
         CUPTI.event_t       = C.c_uint32
         CUPTI.event_attr_t  = C.c_int
 
+        CUPTI.metric_t       = C.c_uint32
+        CUPTI.metric_attr_t  = C.c_int
+
         CUPTI.event_collection_mode = enum(CONTINUOUS = 0,
                                            KERNEL     = 1)
 
@@ -167,6 +184,14 @@ def load_libraries():
                                       NUM_EVENTS                   = 3,
                                       EVENTS                       = 4,
                                       INSTANCE_COUNT               = 5)
+
+        CUPTI.metric_attr = enum(NAME              = 0,
+                                 SHORT_DESCRIPTION = 1,
+                                 LONG_DESCRIPTION  = 2,
+                                 CATEGORY          = 3,
+                                 VALUE_KIND        = 4,
+                                 EVALUATION_MODE   = 5)
+
     except OSError:
         print 'Could not load library libcupti.so'
         sys.exit(-1)

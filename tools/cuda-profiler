@@ -49,6 +49,8 @@ def do_template(args):
     options = cuda.get_options()
     # Create counters
     counters = cuda.get_counters(False)
+    # Create metrics
+    metrics = cuda.get_metrics()
     # Write to file
     io.put_conf_to_file(OPTION_CONF_FILE, options, counters)
 
@@ -68,6 +70,8 @@ def do_profile(args):
     options = cuda.get_options()
     # Create counters
     counters = cuda.get_counters(False)
+    # Create metrics
+    metrics = cuda.get_metrics()
     # Read counters from configuration file
     options_conf, counters_conf = io.get_conf_from_file(OPTION_CONF_FILE)
 
