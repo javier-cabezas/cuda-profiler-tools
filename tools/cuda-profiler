@@ -4,24 +4,24 @@
 #
 # Copyright (c) 2013 Barcelona Supercomputing Center
 #                    IMPACT Research Group
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 
 import cudaprof
-import cudaprof.common as common
+from cudaprof.common import enum
 import cudaprof.cuda   as cuda
 import cudaprof.io     as io
 
@@ -36,8 +36,8 @@ def shell():
     from IPython import embed
     embed()
 
-ACTIONS = common.enum(TEMPLATE = 10,
-                      PROFILE  = 11)
+ACTIONS = enum(TEMPLATE = 10,
+               PROFILE  = 11)
 
 def do_template(args):
     OPTION_CONF_FILE = args['tmpl_file']
@@ -60,8 +60,8 @@ def do_profile(args):
     OPTION_CMD_ARGS  = ' '.join(args['args'])
 
     OPTION_GRAPHICAL = args['graphical']
-    OPTION_CONF_FILE = args['conf'] 
-    OPTION_OUT_FILE_PATTERN = args['out'] 
+    OPTION_CONF_FILE = args['conf']
+    OPTION_OUT_FILE_PATTERN = args['out']
 
     # Initialize CUDA
     cuda.init()
@@ -139,4 +139,3 @@ if __name__=="__main__":
     fun = args.func
 
     fun(vars(args))
-

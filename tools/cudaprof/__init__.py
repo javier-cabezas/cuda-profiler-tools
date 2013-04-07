@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import common
-import cuda
-import io
-import runner
+#import common
+#import cuda
+#import io
+#import runner
 
-Option =  common.Option
-Counter = common.Counter
+#Option  = common.Option
+#Counter = common.Counter
+#Metric  = common.Metric
 
 def init_options(options_new, options_saved):
     assert isinstance(options_saved, list), 'Wrong contents in options'
@@ -36,7 +37,7 @@ def init_options(options_new, options_saved):
 
 def init_counters(counters_new, counters_saved):
     # Initialize counter values with the ones stored in the file (if any)
-    for domain, counters in counters_new.items():
+    for counters in counters_new.values():
         # Only merge those counters found in both dictionaries
         for counter_new in counters:
             counter_saved = [ counter for counter in counters_saved if counter.name == counter_new.name ]
@@ -46,7 +47,7 @@ def init_counters(counters_new, counters_saved):
 
 def init_metrics(metrics_new, metrics_saved):
     # Initialize metric values with the ones stored in the file (if any)
-    for category, metrics in metrics_new.items():
+    for metrics in metrics_new.values():
         # Only merge those metrics found in both dictionaries
         for metric_new in metrics:
             metric_saved = [ metric for metric in metrics_saved if metric.name == metric_new.name ]
@@ -57,8 +58,8 @@ def init_metrics(metrics_new, metrics_saved):
 
 def print_counters(tag, counters):
     print tag
-    for domain, ctrs in counters.items():
-        for counter in ctrs: 
+    for ctrs in counters.values():
+        for counter in ctrs:
             if counter.active == True:
                 print counter
 

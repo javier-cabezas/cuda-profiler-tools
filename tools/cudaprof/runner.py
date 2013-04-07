@@ -2,17 +2,17 @@
 #
 # Copyright (c) 2013 Barcelona Supercomputing Center
 #                    IMPACT Research Group
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -56,7 +56,7 @@ def merge_files(output, input_files):
             # Read colum names
             if len(file_columns) == 0:
                 file_columns = line.split(',')
-                
+
                 # Find new columns
                 for i, column in zip(range(len(file_columns)), file_columns):
                     if column not in columns:
@@ -68,7 +68,7 @@ def merge_files(output, input_files):
 
                 if len(line_data) < len(file_columns):
                     line_data += [''] * (len(file_columns) - len(line_data))
-         
+
                 lines_data.append(line_data)
 
         files_data[_f] = lines_data
@@ -80,7 +80,6 @@ def merge_files(output, input_files):
 
     # Merge results for each line
     for i in range(nlines):
-        out_data = []
         for column in columns:
             f, c = column_to_file_map[column]
             #out_data.append(files_data[f][i][c])
@@ -113,7 +112,7 @@ def launch_group(cmd, args, options, group, **kwargs):
             f.write('%s\n' % counter.name)
 
         f.close()
-        
+
         os.environ['COMPUTE_PROFILE_CONFIG'] = f_name
 
     # Modify the environment
@@ -122,10 +121,13 @@ def launch_group(cmd, args, options, group, **kwargs):
     os.environ['COMPUTE_PROFILE_LOG'] = out_file
 
     # Execute the program
-    p = proc.Popen([cmd] + args.split(' '), stdout = proc.PIPE, stderr = proc.PIPE, env = os.environ)
+    p = proc.Popen([cmd] + args.split(' '),
+                   stdout = proc.PIPE,
+                   stderr = proc.PIPE,
+                   env = os.environ)
     pid = p.pid
     p.wait()
-    
+
     if lines > 0:
         # Remove temporary file
         try:
@@ -138,9 +140,9 @@ def launch_group(cmd, args, options, group, **kwargs):
 def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs):
     assert len(groups) > 0, 'Empty counter group'
 
-    counters = []
-    for group in groups:
-        counters += group
+    #counters = []
+    #for group in groups:
+    #    counters += group
 
     csv              = kwargs.get('csv', True)
     out_file_pattern = kwargs.get('out_pattern', 'cuda_profile_%d.log')
@@ -159,7 +161,7 @@ def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs
 
     group_pids = []
 
-    for i, group in zip(range(len(groups)), groups):
+    for group in groups:
         # Report progress
         if progress != None:
             progress.next()
@@ -167,7 +169,6 @@ def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs
         group_pid = launch_group(cmd, args, options, group, csv = csv, out_dir = tempdir)
         group_pids.append(group_pid)
 
-    
     gpus = len(glob.glob(tempdir + '/cuda_profile_%d_*.log' % group_pids[0]))
 
     for gpu in range(gpus):

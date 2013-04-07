@@ -2,21 +2,21 @@
 #
 # Copyright (c) 2013 Barcelona Supercomputing Center
 #                    IMPACT Research Group
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import cudaprof.common as common
+from cudaprof.common import now
 import cudaprof.cuda   as cuda
 import cudaprof.runner as runner
 
@@ -25,32 +25,32 @@ def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_a
     enabled_options = [ option for option in options if option.active == True ]
 
     # Collect enabled events
-    enabled_counters = [ counter for domain, _counters in counters.items()
+    enabled_counters = [ counter for _counters in counters.values()
                                  for counter in _counters if counter.active == True ]
 
     # Collect enabled metrics
-    enabled_metrics = [ metric for category, _metrics in metrics.items()
+    enabled_metrics = [ metric for _metrics in metrics.values()
                                for metric in _metrics if metric.active == True ]
 
     # Enable counters needed by the metrics
     for metric in enabled_metrics:
         for counter_name in metric.counters:
             enabled_counter = [ counter for counter in enabled_counters if counter.name == counter_name ]
-            
+
             if len(enabled_counter) == 0:
                 # Not enabled by default
-                counter = [ counter for domain, _counters in counters.items()
+                counter = [ counter for _counters in counters.values()
                                     for counter in _counters if counter.name == counter_name ]
                 assert len(counter) > 0, "Counter name not known"
 
                 enabled_counters += counter
-            
+
     groups = cuda.get_event_groups(enabled_counters)
 
     def print_progress(n):
         i = 1
         while i <= n:
-            print "%s> Run %d/%d" % (common.now(), i, n)
+            print "%s> Run %d/%d" % (now(), i, n)
             i +=1
             yield
 

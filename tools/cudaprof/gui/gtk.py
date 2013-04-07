@@ -21,10 +21,10 @@ import os
 from gi.repository import Gtk
 from gi.repository import Gdk
 
-import cudaprof.common as common
-import cudaprof.cuda   as cuda
-import cudaprof.io     as io
-import cudaprof.runner as runner
+from cudaprof.common import now
+import cudaprof.cuda   as _cuda
+import cudaprof.io     as _io
+import cudaprof.runner as _runner
 
 class NotebookDomains(Gtk.Notebook):
     def __init__(self, options, domains, parent):
@@ -98,7 +98,7 @@ class NotebookDomains(Gtk.Notebook):
                                                       self.on_option_toggled, option)
             self.checkboxes_opts[option.name].set_active(option.active)
 
-        for domain, ctrs in counters.items():
+        for ctrs in counters.values():
             for counter in ctrs:
                 self.checkboxes[counter.name].connect("toggled",
                                                       self.on_counter_toggled, counter)
@@ -116,6 +116,7 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="CUDA Profiler Configuration Tool")
         self.options = copy.deepcopy(options)
         self.domains = copy.deepcopy(domains)
+        self.metrics = copy.deepcopy(metrics)
 
         self.initialized = False
 
@@ -247,6 +248,8 @@ class MainWindow(Gtk.Window):
         path_out_pattern = self.current_out_pattern.replace(homedir, '~')
         self.entry_out_pattern.set_text(path_out_pattern)
 
+        self.button_profile.set_sensitive(os.path.isfile(self.current_cmd))
+
         ##
         ## LOG
         ##
@@ -288,11 +291,10 @@ class MainWindow(Gtk.Window):
         self.entry_out_pattern.connect("changed", self.on_out_pattern_changed)
 
         self.entry_cmd.connect("changed", self.on_path_cmd_changed)
-        self.button_profile.set_sensitive(os.path.isfile(self.entry_cmd.get_text()))
 
-        hints = Gdk.Geometry();
-        hints.min_height = -1; # Current minimum size
-        hints.min_width  = 500;
+        hints = Gdk.Geometry()
+        hints.min_height = -1  # Current minimum size
+        hints.min_width  = 500
 
         self.set_geometry_hints(self, hints, Gdk.WindowHints.MIN_SIZE)
 
@@ -312,7 +314,8 @@ class MainWindow(Gtk.Window):
 
         is_dir = False
         try:
-            is_dir = os.path.samefile(dirname, self.current_conf_out) or os.path.isdir(self.current_conf_out)
+            is_dir = os.path.samefile(dirname,
+                                      self.current_conf_out) or os.path.isdir(self.current_conf_out)
         except OSError:
             # Ignore
             pass
@@ -334,7 +337,9 @@ class MainWindow(Gtk.Window):
 
         is_dir = (path[-1] == '/')
 
-        self.button_profile.set_sensitive((not is_dir) and os.path.isdir(dirname) and cuda.is_valid_output_pattern(self.current_out_pattern))
+        self.button_profile.set_sensitive((not is_dir) and
+                                          os.path.isdir(dirname) and
+                                          _cuda.is_valid_output_pattern(self.current_out_pattern))
 
     def on_choose_load_clicked(self, button):
         dialog = Gtk.FileChooserDialog("Please choose a file", self,
@@ -377,14 +382,14 @@ class MainWindow(Gtk.Window):
             pass
 
         dialog.destroy()
-        
+
     def on_load_clicked(self, button):
         # Create counters
-        self.options = cuda.get_options()
+        self.options = _cuda.get_options()
         # Reset counters
-        self.domains = cuda.get_counters(False)
+        self.domains = _cuda.get_counters(False)
         # Load from file
-        options_file, counters_file = io.get_conf_from_file(self.current_conf_in)
+        options_file, counters_file = _io.get_conf_from_file(self.current_conf_in)
 
         # Merge options from file
         cudaprof.init_options(self.options, options_file)
@@ -394,32 +399,53 @@ class MainWindow(Gtk.Window):
         self.notebook_domains.update_conf(self.options, self.domains)
 
         buf = self.label_log.get_buffer()
-        buf.insert(buf.get_start_iter(), "%s> Loaded configuration file '%s'\n" % (common.now(),
-                                                                                   self.current_conf_in))
+        buf.insert(buf.get_start_iter(),
+                   "%s> Loaded configuration file '%s'\n" %
+                   (now(),
+                    self.current_conf_in))
 
 
     def on_save_clicked(self, button):
         # Write to file
-        io.put_conf_to_file(self.current_conf_out, self.options, self.domains)
+        _io.put_conf_to_file(self.current_conf_out, self.options, self.domains, self.metrics)
 
         buf = self.label_log.get_buffer()
-        buf.insert(buf.get_start_iter(), "%s> Saved configuration file '%s'\n" % (common.now(),
-                                                                                  self.current_conf_out))
+        buf.insert(buf.get_start_iter(),
+                   "%s> Saved configuration file '%s'\n" %
+                   (now(),
+                    self.current_conf_out))
 
 
     def on_profile_clicked(self, button):
         # Collect enabled options
         enabled_options = [ option for option in self.options if option.active == True ]
         # Collect enabled events
-        enabled_counters = [ counter for domain, counters in self.domains.items()
+        enabled_counters = [ counter for counters in self.domains.values()
                                      for counter in counters if counter.active == True ]
+
+        # Collect enabled metrics
+        enabled_metrics = [ metric for metrics in self.metrics.values()
+                                   for metric in metrics if metric.active == True ]
+
+        # Enable counters needed by the metrics
+        for metric in enabled_metrics:
+            for counter_name in metric.counters:
+                enabled_counter = [ counter for counter in enabled_counters if counter.name == counter_name ]
+
+                if len(enabled_counter) == 0:
+                    # Not enabled by default
+                    counter = [ counter for counters in self.domains.values()
+                                        for counter in counters if counter.name == counter_name ]
+                    assert len(counter) > 0, "Counter name not known"
+
+                    enabled_counters += counter
 
         cmd  = self.entry_cmd.get_text()
         args = self.entry_args.get_text()
-        
-        groups = cuda.get_event_groups(enabled_counters)
+
+        groups = _cuda.get_event_groups(enabled_counters)
         buf = self.label_log.get_buffer()
-        buf.insert(buf.get_start_iter(), "%s> BEGIN PROFILE: Command: '%s %s'\n" % (common.now(), cmd, args))
+        buf.insert(buf.get_start_iter(), "%s> BEGIN PROFILE: Command: '%s %s'\n" % (now(), cmd, args))
 
         # Repaint
         while Gtk.events_pending():
@@ -429,7 +455,7 @@ class MainWindow(Gtk.Window):
         def print_progress(n):
             i = 1
             while i <= n:
-                buf.insert(buf.get_start_iter(), "%s> Run %d/%d\n" % (common.now(), i, n))
+                buf.insert(buf.get_start_iter(), "%s> Run %d/%d\n" % (now(), i, n))
                 # Update GUI since we are in a handler
                 while Gtk.events_pending():
                     Gtk.main_iteration()
@@ -439,9 +465,10 @@ class MainWindow(Gtk.Window):
 
         progress = print_progress(len(groups))
 
-        runner.launch_groups(self.current_cmd, args, enabled_options, groups, progress, out_pattern = self.current_out_pattern)
+        _runner.launch_groups(self.current_cmd, args, enabled_options, groups,
+                              self.metrics, progress, out_pattern = self.current_out_pattern)
 
-        buf.insert(buf.get_start_iter(), "%s> END PROFILE\n" % common.now())
+        buf.insert(buf.get_start_iter(), "%s> END PROFILE\n" % now())
 
 
 def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):

@@ -16,13 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import ctypes as C
 import sys
 
-import common
-
-enum = common.enum
+from cudaprof.common import enum
 
 CUDA = None
 CUPTI = None
@@ -52,7 +49,7 @@ def register_cupti(f, args):
     f_orig = f
     def wrapper(*my_args):
         res = f_orig(*my_args)
-    
+
         if res != 0:
             print 'CUPTI: Error "%d" calling %s' % (res, f)
 
