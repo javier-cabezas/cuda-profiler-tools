@@ -2,17 +2,17 @@
 #
 # Copyright (c) 2013 Barcelona Supercomputing Center
 #                    IMPACT Research Group
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -26,9 +26,9 @@ def enum(**enums):
     return type('Enum', (), enums)
 
 class Option:
-    def __init__(self, name, value = None):
+    def __init__(self, name, description, value = None):
         self.name        = name
-        self.description = "" # TODO: fill this field
+        self.description = description
         self.value       = value
 
         self.active = False
@@ -44,6 +44,12 @@ class Option:
 
 
 class Counter(object):
+    CATEGORIES = { 0: 'Instruction',
+                   1: 'Memory',
+                   2: 'Cache',
+                   3: 'Profile trigger'
+                 }
+
     def __init__(self, name, description, category, id):
         self.name        = name
         self.description = description
@@ -64,6 +70,13 @@ class Counter(object):
 
 
 class Metric(object):
+    CATEGORIES = { 0: 'Memory',
+                   1: 'Instruction',
+                   2: 'Multiprocessor',
+                   3: 'Cache',
+                   4: 'Texture',
+                 }
+
     def __init__(self, name, description, category, id, counters):
         self.name        = name
         self.description = description
@@ -83,20 +96,6 @@ class Metric(object):
     def is_internal(self):
         return self.name[0:2] == '__'
 
-
-
-COUNTER_CATEGORIES = { 0: 'Instruction',
-                       1: 'Memory',
-                       2: 'Cache',
-                       3: 'Profile trigger'
-                      }
-
-METRIC_CATEGORIES = { 0: 'Memory',
-                      1: 'Instruction',
-                      2: 'Multiprocessor',
-                      3: 'Cache',
-                      4: 'Texture',
-                    }
 
 
 # vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:

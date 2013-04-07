@@ -24,13 +24,20 @@ import tempfile
 
 import shutil
 
+def _get_elem(f, container):
+    for elem in container:
+        if f(elem) == True:
+            return elem
+
+    return None
+
 def merge_files(output, input_files):
     columns = []
 
     files_data = {}
     column_to_file_map = {}
 
-    data = []
+    data = {}
     nlines = 0
 
     # Iterate per input file
@@ -76,12 +83,14 @@ def merge_files(output, input_files):
         out_data = []
         for column in columns:
             f, c = column_to_file_map[column]
-            out_data.append(files_data[f][i][c])
+            #out_data.append(files_data[f][i][c])
 
-        data.append(out_data)
+            if not data.has_key(column):
+                data[column] = list()
 
+            data[column].append(files_data[f][i][c])
 
-    return columns, data
+    return columns, data, nlines
 
 
 def launch_group(cmd, args, options, group, **kwargs):
@@ -126,8 +135,12 @@ def launch_group(cmd, args, options, group, **kwargs):
 
     return pid
 
-def launch_groups(cmd, args, options, groups, progress = None, **kwargs):
+def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs):
     assert len(groups) > 0, 'Empty counter group'
+
+    counters = []
+    for group in groups:
+        counters += group
 
     csv              = kwargs.get('csv', True)
     out_file_pattern = kwargs.get('out_pattern', 'cuda_profile_%d.log')
@@ -162,14 +175,18 @@ def launch_groups(cmd, args, options, groups, progress = None, **kwargs):
         for group_pid in group_pids:
             files.append(tempdir + '/cuda_profile_%d_%d.log' % (group_pid, gpu))
 
-        column, lines = merge_files(out_file_pattern % gpu, files)
-        
+        columns, data, nlines = merge_files(out_file_pattern % gpu, files)
+
         f = open(out_file_pattern % gpu, 'w')
 
-        f.write(','.join(column) + '\n')
+        f.write(','.join(columns) + '\n')
 
-        for line in lines:
-            f.write(','.join(line) + '\n')
+        for line in range(nlines):
+            row = []
+            for k in columns:
+                row.append(data[k][line])
+
+            f.write(','.join(row) + '\n')
 
         f.close()
 

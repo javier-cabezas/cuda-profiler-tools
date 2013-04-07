@@ -44,6 +44,17 @@ def init_counters(counters_new, counters_saved):
                 counter_new.set_active(counter_saved[0].active)
 
 
+def init_metrics(metrics_new, metrics_saved):
+    # Initialize metric values with the ones stored in the file (if any)
+    for category, metrics in metrics_new.items():
+        # Only merge those metrics found in both dictionaries
+        for metric_new in metrics:
+            metric_saved = [ metric for metric in metrics_saved if metric.name == metric_new.name ]
+            if len(metric_saved) == 1:
+                metric_new.set_active(metric_saved[0].active)
+
+
+
 def print_counters(tag, counters):
     print tag
     for domain, ctrs in counters.items():

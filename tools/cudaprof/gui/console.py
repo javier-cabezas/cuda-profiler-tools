@@ -20,13 +20,31 @@ import cudaprof.common as common
 import cudaprof.cuda   as cuda
 import cudaprof.runner as runner
 
-def start(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
+def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
     # Collect enabled options
     enabled_options = [ option for option in options if option.active == True ]
+
     # Collect enabled events
     enabled_counters = [ counter for domain, _counters in counters.items()
                                  for counter in _counters if counter.active == True ]
 
+    # Collect enabled metrics
+    enabled_metrics = [ metric for category, _metrics in metrics.items()
+                               for metric in _metrics if metric.active == True ]
+
+    # Enable counters needed by the metrics
+    for metric in enabled_metrics:
+        for counter_name in metric.counters:
+            enabled_counter = [ counter for counter in enabled_counters if counter.name == counter_name ]
+            
+            if len(enabled_counter) == 0:
+                # Not enabled by default
+                counter = [ counter for domain, _counters in counters.items()
+                                    for counter in _counters if counter.name == counter_name ]
+                assert len(counter) > 0, "Counter name not known"
+
+                enabled_counters += counter
+            
     groups = cuda.get_event_groups(enabled_counters)
 
     def print_progress(n):
@@ -42,6 +60,7 @@ def start(options, counters, option_conf_file, option_cmd, option_cmd_args, opti
                          option_cmd_args,
                          enabled_options,
                          groups,
+                         enabled_metrics,
                          progress,
                          out_pattern = option_out_pattern)
 

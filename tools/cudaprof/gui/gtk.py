@@ -2,17 +2,17 @@
 #
 # Copyright (c) 2013 Barcelona Supercomputing Center
 #                    IMPACT Research Group
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -38,9 +38,9 @@ class NotebookDomains(Gtk.Notebook):
         # Add frame for the options
         frame_opts  = Gtk.Frame()
         layout = Gtk.ScrolledWindow()
-    
+
         grid = Gtk.Grid(orientation = Gtk.Orientation.VERTICAL)
-    
+
         layout.add_with_viewport(grid)
         frame_opts.add(layout)
 
@@ -51,22 +51,22 @@ class NotebookDomains(Gtk.Notebook):
             check_counter.set_active(option.active)
             check_counter.set_tooltip_text(option.description)
             grid.add(check_counter)
-    
+
             self.checkboxes_opts[option.name] = check_counter
 
         self.append_page(frame_opts, Gtk.Label('Options'))
         frame_opts.show()
-    
+
         # Create one page per domain
         for domain in sorted(domains.keys()):
             frame  = Gtk.Frame()
             layout = Gtk.ScrolledWindow()
-    
+
             grid = Gtk.Grid(orientation = Gtk.Orientation.VERTICAL)
-    
+
             layout.add_with_viewport(grid)
             frame.add(layout)
-    
+
             for counter in sorted(domains[domain], key = lambda x: x.name):
                 # Create one checkbox per counter
                 check_counter = Gtk.CheckButton(counter.name)
@@ -74,10 +74,9 @@ class NotebookDomains(Gtk.Notebook):
                 check_counter.set_active(counter.active)
                 check_counter.set_tooltip_text(counter.description)
                 grid.add(check_counter)
-    
+
                 self.checkboxes[counter.name] = check_counter
 
-    
             self.append_page(frame, Gtk.Label(domain))
             frame.show()
 
@@ -92,15 +91,17 @@ class NotebookDomains(Gtk.Notebook):
         assert len(data) == 1
         counter = data[0]
         counter.set_active(check_counter.get_active())
-    
+
     def update_conf(self, options, counters):
-        for option in options: 
-            self.checkboxes_opts[option.name].connect("toggled", self.on_option_toggled, option)
+        for option in options:
+            self.checkboxes_opts[option.name].connect("toggled",
+                                                      self.on_option_toggled, option)
             self.checkboxes_opts[option.name].set_active(option.active)
 
         for domain, ctrs in counters.items():
-            for counter in ctrs: 
-                self.checkboxes[counter.name].connect("toggled", self.on_counter_toggled, counter)
+            for counter in ctrs:
+                self.checkboxes[counter.name].connect("toggled",
+                                                      self.on_counter_toggled, counter)
                 self.checkboxes[counter.name].set_active(counter.active)
 
 
@@ -111,7 +112,7 @@ def get_abspath(path):
 
 
 class MainWindow(Gtk.Window):
-    def __init__(self, options, domains, conf_file, cmd, args, out_pattern):
+    def __init__(self, options, domains, metrics, conf_file, cmd, args, out_pattern):
         Gtk.Window.__init__(self, title="CUDA Profiler Configuration Tool")
         self.options = copy.deepcopy(options)
         self.domains = copy.deepcopy(domains)
@@ -161,7 +162,7 @@ class MainWindow(Gtk.Window):
 
         self.box_log = Gtk.HBox()
         self.box.pack_start(self.box_log, False, False, 0)
-        
+
         ##
         ## CONFIGURATION LOAD/SAVE
         ##
@@ -443,9 +444,9 @@ class MainWindow(Gtk.Window):
         buf.insert(buf.get_start_iter(), "%s> END PROFILE\n" % common.now())
 
 
-def start(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
+def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
     # Create window
-    win = MainWindow(options, counters, option_conf_file, option_cmd, option_cmd_args, option_out_pattern)
+    win = MainWindow(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern)
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
 
