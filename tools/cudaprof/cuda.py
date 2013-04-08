@@ -111,7 +111,7 @@ def get_options():
     return copy.deepcopy(list(PROFILER_OPTIONS.values()))
 
 
-def get_counters(by_domain):
+def get_counters():
     counters = {}
 
     # Get number of event domains
@@ -161,10 +161,6 @@ def get_counters(by_domain):
                    domain_instances_profiled,
                    domain_instances_total)
 
-        # If group per event domain
-        if by_domain:
-            counters[domain_name] = list()
-
         # Get number of events in the domain
         nevents = C.c_uint32()
         CUPTI.cuptiEventDomainGetNumEvents(domain, C.byref(nevents))
@@ -204,16 +200,12 @@ def get_counters(by_domain):
             # Create a new Counter
             c = Counter(name, description, category, event, d)
 
-            if by_domain:
-                # If group per event domain
-                counters[domain_name].append(c)
-            else:
-                # If group per event category
-                category = Counter.CATEGORIES[c.category]
-                if not counters.has_key(category):
-                    counters[category] = list()
+            # If group per event category
+            category = Counter.CATEGORIES[c.category]
+            if not counters.has_key(category):
+                counters[category] = list()
 
-                counters[category].append(c)
+            counters[category].append(c)
 
     return counters
 
