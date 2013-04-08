@@ -212,8 +212,8 @@ def get_counters(by_domain):
                 category = Counter.CATEGORIES[c.category]
                 if not counters.has_key(category):
                     counters[category] = list()
-                else:
-                    counters[category].append(c)
+
+                counters[category].append(c)
 
     return counters
 
@@ -345,6 +345,7 @@ def get_metrics(counters):
             event = _get_elem(lambda e: e.id == _event,
                               counters_list)
 
+            assert event != None, 'Event %d not in metric_counter list' % _event
             metric_counters.append(event)
 
         #for event in events:
@@ -365,8 +366,8 @@ def get_metrics(counters):
         category = Metric.CATEGORIES[m.category]
         if not metrics_ret.has_key(category):
             metrics_ret[category] = list()
-        else:
-            metrics_ret[category].append(m)
+
+        metrics_ret[category].append(m)
 
     return metrics_ret
 
