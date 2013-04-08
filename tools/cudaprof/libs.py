@@ -65,11 +65,24 @@ class cupti_group_sets(C.Structure):
     _fields_ = [("numSets", C.c_uint32),
                 ("sets", C.POINTER(cupti_group_set))]
 
+
 class cupti_metric_value(C.Union):
     _fields_ = [("metricValueDouble", C.c_double),
                 ("metricValueUint64", C.c_uint64),
                 ("metricValuePercent", C.c_double),
                 ("metricValueThroughput", C.c_uint64)]
+
+    def get_value(self, kind):
+        if kind == CUPTI.metric_value_kind.DOUBLE:
+            return self.metricValueDouble
+        elif kind == CUPTI.metric_value_kind.UINT64:
+            return self.metricValueUint64
+        elif kind == CUPTI.metric_value_kind.PERCENT:
+            return self.metricValuePercent
+        elif kind == CUPTI.metric_value_kind.THROUGHPUT:
+            return self.metricValueThroughput
+        else:
+            assert False, 'Wrong metric value kind'
 
 
 def init_libcuda():
@@ -128,6 +141,9 @@ def init_libcupti():
     register_cupti(CUPTI.cuptiDeviceGetNumMetrics,
                    [ CUDA.device_t, C.POINTER(C.c_uint32) ])
 
+    register_cupti(CUPTI.cuptiMetricGetAttribute,
+                   [ CUPTI.metric_t, CUPTI.metric_attr_t, C.POINTER(C.c_size_t), C.c_void_p ])
+
     register_cupti(CUPTI.cuptiDeviceEnumMetrics,
                    [ CUDA.device_t, C.POINTER(C.c_size_t), C.POINTER(CUPTI.metric_t) ])
 
@@ -145,7 +161,8 @@ def init_libcupti():
                      C.c_size_t,                   # eventValueArraySizeBytes
                      C.POINTER(C.c_uint64),        # eventValueArray
                      C.c_uint64,                   # timeDuration
-                     C.POINTER(cupti_group_set) ]) # metricValue
+                     C.POINTER(cupti_metric_value) # metricValue
+                   ])
 
 
 def load_libraries():
@@ -177,12 +194,12 @@ def load_libraries():
         CUPTI.event_t       = C.c_uint32
         CUPTI.event_attr_t  = C.c_int
 
-        CUPTI.metric_t       = C.c_uint32
-        CUPTI.metric_attr_t  = C.c_int
+        CUPTI.metric_t      = C.c_uint32
+        CUPTI.metric_attr_t = C.c_int
 
-        CUPTI.group_set    = cupti_group_set
-        CUPTI.group_sets   = cupti_group_sets
-        CUPTI.metric_value = cupti_metric_value
+        CUPTI.group_set     = cupti_group_set
+        CUPTI.group_sets    = cupti_group_sets
+        CUPTI.metric_value  = cupti_metric_value
 
         CUPTI.event_collection_mode = enum(CONTINUOUS = 0,
                                            KERNEL     = 1)
@@ -214,6 +231,9 @@ def load_libraries():
                                        UINT64     = 1,
                                        PERCENT    = 2,
                                        THROUGHPUT = 3)
+
+        CUPTI.metric_evaluation_mode = enum(PER_INSTANCE = 1,
+                                            AGGREGATE    = 1 << 1)
 
     except OSError:
         print 'Could not load library libcupti.so'

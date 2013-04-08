@@ -24,6 +24,8 @@ import tempfile
 
 import shutil
 
+import cudaprof.cuda as cuda
+
 def _get_elem(f, container):
     for elem in container:
         if f(elem) == True:
@@ -140,6 +142,9 @@ def launch_group(cmd, args, options, group, **kwargs):
 def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs):
     assert len(groups) > 0, 'Empty counter group'
 
+    aggregate_mode = _get_elem(lambda opt: opt.name == 'countermodeaggregate',
+                               options) != None
+
     #counters = []
     #for group in groups:
     #    counters += group
@@ -177,6 +182,14 @@ def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs
             files.append(tempdir + '/cuda_profile_%d_%d.log' % (group_pid, gpu))
 
         columns, data, nlines = merge_files(out_file_pattern % gpu, files)
+
+        if len(metrics) > 0:
+            metrics_values = cuda.compute_metrics(gpu,
+                                                  metrics,
+                                                  columns,
+                                                  data,
+                                                  nlines,
+                                                  aggregate_mode)
 
         f = open(out_file_pattern % gpu, 'w')
 

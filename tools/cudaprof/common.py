@@ -43,6 +43,14 @@ class Option:
         self.active = active
 
 
+class Domain(dict):
+    def __init__(self, name, id, i_profiled, i_total):
+        self.name       = name
+        self.id         = id
+        self.i_profiled = i_profiled
+        self.i_total    = i_total
+
+
 class Counter(object):
     CATEGORIES = { 0: 'Instruction',
                    1: 'Memory',
@@ -50,11 +58,12 @@ class Counter(object):
                    3: 'Profile trigger'
                  }
 
-    def __init__(self, name, description, category, id):
+    def __init__(self, name, description, category, id, domain):
         self.name        = name
         self.description = description
         self.category    = category
         self.id          = id
+        self.domain      = domain
 
         self.active = False
 
@@ -77,11 +86,15 @@ class Metric(object):
                    4: 'Texture',
                  }
 
-    def __init__(self, name, description, category, id, counters):
+    def __init__(self, name, description, category, id, value_kind,
+                 evaluation_instance, evaluation_aggregate, counters):
         self.name        = name
         self.description = description
         self.category    = category
         self.id          = id
+        self.value_kind  = value_kind
+        self.eval_instance  = evaluation_instance
+        self.eval_aggregate = evaluation_aggregate
         self.counters    = counters
 
         self.active = False

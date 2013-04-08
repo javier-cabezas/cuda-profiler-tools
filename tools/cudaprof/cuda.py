@@ -18,7 +18,7 @@
 
 import copy
 
-from cudaprof.common import Counter, Metric, Option
+from cudaprof.common import Counter, Domain, Metric, Option
 from cudaprof.libs import C, CUDA, CUPTI
 
 CUDA_FAKE_CONTEXT = None
@@ -70,6 +70,15 @@ PROFILER_OPTIONS = {
                                              'Use enableonstart 1 option to enable or enableonstart 0 to disable profiling from the start of application execution. If this option is not used then by default profiling is enabled from the start. To limit profiling to a region of your application, CUDA provides functions to start and stop profile data collection. cudaProfilerStart() is used to start profiling and cudaProfilerStop() is used to stop profiling (using the CUDA driver API, you get the same functionality with cuProfilerStart() and cuProfilerStop()). When using the start and stop functions, you also need to instruct the profiling tool to disable profiling at the start of the application. For command line profiler you do this by adding enableonstart 0 in the profiler configuration file.',
                                              1)
 }
+
+
+def _get_elem(f, container):
+    for elem in container:
+        if f(elem) == True:
+            return elem
+
+    return None
+
 
 def init():
     global CUDA_FAKE_CONTEXT
@@ -148,7 +157,9 @@ def get_counters(by_domain):
                                                  C.byref(value))
         domain_instances_total = value.value
 
-        print domain_name, domain_instances_profiled, domain_instances_total
+        d = Domain(domain_name, domain,
+                   domain_instances_profiled,
+                   domain_instances_total)
 
         # If group per event domain
         if by_domain:
@@ -191,7 +202,7 @@ def get_counters(by_domain):
             category = cat.value
 
             # Create a new Counter
-            c = Counter(name, description, category, event)
+            c = Counter(name, description, category, event, d)
 
             if by_domain:
                 # If group per event domain
@@ -260,7 +271,10 @@ def get_event_groups(counters):
     return counter_groups
 
 
-def get_metrics():
+def get_metrics(counters):
+    counters_list = [ counter for _counters in counters.values()
+                              for counter in _counters ]
+
     metrics_ret = {}
 
     # Get number of metrics
@@ -299,6 +313,22 @@ def get_metrics():
                                       C.byref(cat))
         category = cat.value
 
+        val_kind = C.c_int(0)
+        nbytes = C.c_size_t(C.sizeof(C.c_int))
+        CUPTI.cuptiMetricGetAttribute(metric,
+                                      CUPTI.metric_attr.VALUE_KIND,
+                                      C.byref(nbytes),
+                                      C.byref(val_kind))
+        value_kind = val_kind.value
+
+        eval_mode = C.c_int(0)
+        nbytes = C.c_size_t(C.sizeof(C.c_int))
+        CUPTI.cuptiMetricGetAttribute(metric,
+                                      CUPTI.metric_attr.EVALUATION_MODE,
+                                      C.byref(nbytes),
+                                      C.byref(eval_mode))
+        evaluation_mode = eval_mode.value
+
         # Get number of events for the metric
         nevents = C.c_uint32()
         CUPTI.cuptiMetricGetNumEvents(metric, C.byref(nevents))
@@ -310,18 +340,26 @@ def get_metrics():
                                     C.byref(nbytes),
                                     C.cast(events, C.POINTER(CUPTI.event_t)))
 
-        event_names = []
+        metric_counters = []
+        for _event in events:
+            event = _get_elem(lambda e: e.id == _event,
+                              counters_list)
 
-        for event in events:
-            nbytes = C.c_size_t(MAX_STRING_LEN)
-            CUPTI.cuptiEventGetAttribute(event,
-                                         CUPTI.event_attr.NAME,
-                                         C.byref(nbytes),
-                                         p)
-            event_names.append(p.value)
+            metric_counters.append(event)
+
+        #for event in events:
+        #    nbytes = C.c_size_t(MAX_STRING_LEN)
+        #    CUPTI.cuptiEventGetAttribute(event,
+        #                                 CUPTI.event_attr.NAME,
+        #                                 C.byref(nbytes),
+        #                                 p)
+        #    event_ids.append(p.value)
 
         # Create a new Metric
-        m = Metric(name, description, category, metric, event_names)
+        m = Metric(name, description, category, metric, value_kind,
+                   bool(evaluation_mode & CUPTI.metric_evaluation_mode.PER_INSTANCE),
+                   bool(evaluation_mode & CUPTI.metric_evaluation_mode.AGGREGATE),
+                   metric_counters)
 
         # Group per metric category
         category = Metric.CATEGORIES[m.category]
@@ -332,5 +370,41 @@ def get_metrics():
 
     return metrics_ret
 
+
+def compute_metrics(device, metrics, columns, data, nlines, aggregate_mode):
+    for metric in metrics:
+        # Get the indexes of the counters needed for each metric
+        metric_counter_ids = [ counter.id for counter in metric.counters ]
+        #for counter in metric.counters:
+        #    idx = columns.index(counter.name)
+        #    metric_counter_ids.append(idx)
+
+        for line in range(nlines):
+            metric_counters = [ long(data[counter.name][line]) for counter in metric.counters ]
+
+            array_event_id_t = (CUPTI.event_t * len(metric_counters))
+            nbytes_event_id = C.c_size_t(len(metric_counters) * C.sizeof(CUPTI.event_t))
+            values_t        = (C.c_uint64 * len(metric_counters))
+            nbytes_values   = C.c_size_t(len(metric_counters) * C.sizeof(C.c_uint64))
+            # Convert from us to ns
+            duration        = C.c_uint64(long(float(data['gputime'][line]) * 1e3))
+            value           = CUPTI.metric_value(0)
+
+            array_event_id = array_event_id_t(*metric_counter_ids)
+            values         = values_t(*metric_counters)
+
+            CUPTI.cuptiMetricGetValue(device,
+                                      metric.id,
+                                      nbytes_event_id,
+                                      C.cast(array_event_id, C.POINTER(CUPTI.event_t)),
+                                      nbytes_values,
+                                      C.cast(values, C.POINTER(C.c_uint64)),
+                                      duration,
+                                      C.byref(value))
+
+            #print metric.name, value.get_value(metric.value_kind)
+
+
+    return None
 
 # vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:

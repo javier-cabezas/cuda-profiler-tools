@@ -34,13 +34,13 @@ def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_a
 
     # Enable counters needed by the metrics
     for metric in enabled_metrics:
-        for counter_name in metric.counters:
-            enabled_counter = [ counter for counter in enabled_counters if counter.name == counter_name ]
+        for metric_counter in metric.counters:
+            enabled_counter = [ counter for counter in enabled_counters if counter.name == metric_counter.name ]
 
             if len(enabled_counter) == 0:
                 # Not enabled by default
                 counter = [ counter for _counters in counters.values()
-                                    for counter in _counters if counter.name == counter_name ]
+                                    for counter in _counters if counter.name == metric_counter.name ]
                 assert len(counter) > 0, "Counter name not known"
 
                 enabled_counters += counter
