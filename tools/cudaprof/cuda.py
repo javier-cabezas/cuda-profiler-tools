@@ -357,24 +357,51 @@ def get_metrics(counters):
     return metrics_ret
 
 
-def compute_metrics(device, metrics, columns, data, nlines, aggregate_mode):
+def num(s):
+    try:
+        return long(s)
+    except ValueError:
+        return float(s)
+
+
+def get_val(data, line, metric, counter, aggregate_mode):
+    val = long(data[counter.name][line])
+
+    if aggregate_mode and metric.eval_aggregate:
+        # print "(%d, %d, %d, %s, %s)" % (1, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
+        pass
+    elif aggregate_mode and not metric.eval_aggregate:
+        # print "(%d, %d, %d, %s, %s)" % (2, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
+        pass
+    elif not aggregate_mode and metric.eval_aggregate:
+        # print "(%d, %d, %d, %s, %s)" % (3, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
+        pass
+    else: # not aggregate_mode and not metric.eval_aggregate:
+        # print "(%d, %d, %d, %s, %s)" % (4, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
+        pass
+
+    return val
+
+
+def compute_metrics(device, metrics, columns, data, nlines, counters, aggregate_mode):
+    metrics_values = {}
+
     for metric in metrics:
         # Get the indexes of the counters needed for each metric
         metric_counter_ids = [ counter.id for counter in metric.counters ]
-        #for counter in metric.counters:
-        #    idx = columns.index(counter.name)
-        #    metric_counter_ids.append(idx)
+        metrics_values[metric.name] = []
 
         for line in range(nlines):
-            metric_counters = [ long(data[counter.name][line]) for counter in metric.counters ]
+            metric_counters = [ get_val(data, line, metric, counter, aggregate_mode)
+                                for counter in metric.counters ]
 
-            array_event_id_t = (CUPTI.event_t * len(metric_counters))
-            nbytes_event_id = C.c_size_t(len(metric_counters) * C.sizeof(CUPTI.event_t))
-            values_t        = (C.c_uint64 * len(metric_counters))
-            nbytes_values   = C.c_size_t(len(metric_counters) * C.sizeof(C.c_uint64))
+            array_event_id_t = (CUPTI.event_t                     * len(metric_counters))
+            nbytes_event_id  = C.c_size_t(C.sizeof(CUPTI.event_t) * len(metric_counters))
+            values_t         = (C.c_uint64                        * len(metric_counters))
+            nbytes_values    = C.c_size_t(C.sizeof(C.c_uint64)    * len(metric_counters))
             # Convert from us to ns
-            duration        = C.c_uint64(long(float(data['gputime'][line]) * 1e3))
-            value           = CUPTI.metric_value(0)
+            duration         = C.c_uint64(long(float(data['gputime'][line]) * 1e3))
+            value            = CUPTI.metric_value(0)
 
             array_event_id = array_event_id_t(*metric_counter_ids)
             values         = values_t(*metric_counters)
@@ -388,9 +415,8 @@ def compute_metrics(device, metrics, columns, data, nlines, aggregate_mode):
                                       duration,
                                       C.byref(value))
 
-            #print metric.name, value.get_value(metric.value_kind)
+            metrics_values[metric.name].append(value.get_value(metric.value_kind))
 
-
-    return None
+    return metrics_values
 
 # vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:

@@ -52,7 +52,8 @@ class Domain(dict):
 
 
 class Counter(object):
-    CATEGORIES = { 0: 'Instruction',
+    CATEGORIES = {
+                   0: 'Instruction',
                    1: 'Memory',
                    2: 'Cache',
                    3: 'Profile trigger'
@@ -79,11 +80,12 @@ class Counter(object):
 
 
 class Metric(object):
-    CATEGORIES = { 0: 'Memory',
-                   1: 'Instruction',
-                   2: 'Multiprocessor',
-                   3: 'Cache',
-                   4: 'Texture',
+    CATEGORIES = {
+                    0: 'Memory',
+                    1: 'Instruction',
+                    2: 'Multiprocessor',
+                    3: 'Cache',
+                    4: 'Texture',
                  }
 
     def __init__(self, name, description, category, id, value_kind,
@@ -110,5 +112,3 @@ class Metric(object):
         return self.name[0:2] == '__'
 
 
-
-# vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:

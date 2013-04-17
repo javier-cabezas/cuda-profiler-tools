@@ -26,6 +26,15 @@ import shutil
 
 import cudaprof.cuda as cuda
 
+def num(s):
+    try:
+        return long(s)
+    except ValueError:
+        try:
+            return float(s)
+        except ValueError:
+            return s
+
 def _get_elem(f, container):
     for elem in container:
         if f(elem) == True:
@@ -33,7 +42,7 @@ def _get_elem(f, container):
 
     return None
 
-def merge_files(output, input_files):
+def merge_files(input_files):
     columns = []
 
     files_data = {}
@@ -66,12 +75,12 @@ def merge_files(output, input_files):
                         columns.append(column)
 
             else: # Read colum data
-                line_data = line.split(',')
+                records = [ num(record) for record in line.split(',') ]
 
-                if len(line_data) < len(file_columns):
-                    line_data += [''] * (len(file_columns) - len(line_data))
+                if len(records) < len(file_columns):
+                    records += [-1] * (len(file_columns) - len(records))
 
-                lines_data.append(line_data)
+                lines_data.append(records)
 
         files_data[_f] = lines_data
 
@@ -145,9 +154,16 @@ def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs
     aggregate_mode = _get_elem(lambda opt: opt.name == 'countermodeaggregate',
                                options) != None
 
-    #counters = []
-    #for group in groups:
-    #    counters += group
+    counters = { counter.name: counter for group in groups
+                                       for counter in group }
+
+    counter_names = [ counter.name for group in groups
+                                   for counter in group ]
+
+
+    enabled_counter_names = [ counter.name for group in groups
+                                           for counter in group
+                                           if counter.active ]
 
     csv              = kwargs.get('csv', True)
     out_file_pattern = kwargs.get('out_pattern', 'cuda_profile_%d.log')
@@ -181,26 +197,41 @@ def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs
         for group_pid in group_pids:
             files.append(tempdir + '/cuda_profile_%d_%d.log' % (group_pid, gpu))
 
-        columns, data, nlines = merge_files(out_file_pattern % gpu, files)
+        all_counter_columns, data, nlines = merge_files(files)
+        option_columns = [column for column in all_counter_columns if column not in counter_names]
+        counter_columns = [column for column in all_counter_columns if column in enabled_counter_names]
+
+        metric_values = {}
 
         if len(metrics) > 0:
-            metrics_values = cuda.compute_metrics(gpu,
-                                                  metrics,
-                                                  columns,
-                                                  data,
-                                                  nlines,
-                                                  aggregate_mode)
+            metric_values = cuda.compute_metrics(gpu,
+                                                 metrics,
+                                                 all_counter_columns,
+                                                 data,
+                                                 nlines,
+                                                 counters,
+                                                 aggregate_mode)
+
+        metric_columns = [ name for name, value in metric_values.items() ]
 
         f = open(out_file_pattern % gpu, 'w')
-
-        f.write(','.join(columns) + '\n')
+        f.write(','.join(option_columns + counter_columns + metric_columns) + '\n')
 
         for line in range(nlines):
             row = []
-            for k in columns:
+
+            for k in option_columns:
                 row.append(data[k][line])
 
-            f.write(','.join(row) + '\n')
+            for k in counter_columns:
+                row.append(data[k][line])
+
+            for k in metric_columns:
+                row.append(metric_values[k][line])
+
+            records = [ str(record) for record in row ]
+
+            f.write(','.join(records) + '\n')
 
         f.close()
 
