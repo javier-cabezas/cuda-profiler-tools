@@ -367,18 +367,10 @@ def num(s):
 def get_val(data, line, metric, counter, aggregate_mode):
     val = long(data[counter.name][line])
 
-    if aggregate_mode and metric.eval_aggregate:
-        # print "(%d, %d, %d, %s, %s)" % (1, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
-        pass
-    elif aggregate_mode and not metric.eval_aggregate:
-        # print "(%d, %d, %d, %s, %s)" % (2, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
-        pass
-    elif not aggregate_mode and metric.eval_aggregate:
-        # print "(%d, %d, %d, %s, %s)" % (3, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
-        pass
-    else: # not aggregate_mode and not metric.eval_aggregate:
-        # print "(%d, %d, %d, %s, %s)" % (4, metric.eval_aggregate, metric.eval_instance, metric.name, counter.name)
-        pass
+    if aggregate_mode:
+        val = val/counter.domain.i_total
+    else:
+        pass # Do nothing
 
     return val
 
