@@ -27,7 +27,7 @@ import cudaprof.io     as _io
 import cudaprof.runner as _runner
 
 class NotebookDomains(Gtk.Notebook):
-    def __init__(self, options, domains, parent):
+    def __init__(self, options, domains, metrics, parent):
         Gtk.Notebook.__init__(self)
 
         self.parent = parent
@@ -36,12 +36,12 @@ class NotebookDomains(Gtk.Notebook):
         self.checkboxes = {}
 
         # Add frame for the options
-        frame_opts  = Gtk.Frame()
+        frame_opts = Gtk.Frame()
         layout = Gtk.ScrolledWindow()
 
-        grid = Gtk.Grid(orientation = Gtk.Orientation.VERTICAL)
+        grid_options = Gtk.VBox()
 
-        layout.add_with_viewport(grid)
+        layout.add_with_viewport(grid_options)
         frame_opts.add(layout)
 
         for option in options:
@@ -50,35 +50,63 @@ class NotebookDomains(Gtk.Notebook):
             check_counter.connect("toggled", self.on_option_toggled, option)
             check_counter.set_active(option.active)
             check_counter.set_tooltip_text(option.description)
-            grid.add(check_counter)
+            grid_options.add(check_counter)
 
             self.checkboxes_opts[option.name] = check_counter
 
         self.append_page(frame_opts, Gtk.Label('Options'))
         frame_opts.show()
 
+        all_domains = sorted(set(domains.keys() + metrics.keys()))
+
         # Create one page per domain
-        for domain in sorted(domains.keys()):
-            frame  = Gtk.Frame()
+        for domain in all_domains:
+            grid_frames = Gtk.VBox()
+
+            if domain in metrics.keys():
+                frame_metrics  = Gtk.Expander()
+                frame_metrics.set_expanded(True)
+                frame_metrics.set_label('Metrics')
+
+                grid_metrics = Gtk.VBox()
+
+                for metric in sorted(metrics[domain], key = lambda x: x.name):
+                    # Create one checkbox per counter
+                    check_metric = Gtk.CheckButton(metric.name)
+                    check_metric.connect("toggled", self.on_checkbox_toggled, metric)
+                    check_metric.set_active(metric.active)
+                    check_metric.set_tooltip_text(metric.description)
+                    grid_metrics.add(check_metric)
+
+                    self.checkboxes[metric.name] = check_metric
+
+                frame_metrics.add(grid_metrics)
+                grid_frames.pack_start(frame_metrics, False, False, 0)
+
+            if domain in domains.keys():
+                expander_counters  = Gtk.Expander()
+                expander_counters.set_expanded(True)
+                expander_counters.set_label('Counters')
+
+                grid_counters = Gtk.VBox()
+
+                for counter in sorted(domains[domain], key = lambda x: x.name):
+                    # Create one checkbox per counter
+                    check_counter = Gtk.CheckButton(counter.name)
+                    check_counter.connect("toggled", self.on_checkbox_toggled, counter)
+                    check_counter.set_active(counter.active)
+                    check_counter.set_tooltip_text(counter.description)
+                    grid_counters.add(check_counter)
+
+                    self.checkboxes[counter.name] = check_counter
+
+                expander_counters.add(grid_counters)
+                grid_frames.pack_start(expander_counters, False, False, 0)
+
             layout = Gtk.ScrolledWindow()
+            layout.add_with_viewport(grid_frames)
 
-            grid = Gtk.Grid(orientation = Gtk.Orientation.VERTICAL)
-
-            layout.add_with_viewport(grid)
-            frame.add(layout)
-
-            for counter in sorted(domains[domain], key = lambda x: x.name):
-                # Create one checkbox per counter
-                check_counter = Gtk.CheckButton(counter.name)
-                check_counter.connect("toggled", self.on_counter_toggled, counter)
-                check_counter.set_active(counter.active)
-                check_counter.set_tooltip_text(counter.description)
-                grid.add(check_counter)
-
-                self.checkboxes[counter.name] = check_counter
-
-            self.append_page(frame, Gtk.Label(domain))
-            frame.show()
+            self.append_page(layout, Gtk.Label(domain))
 
 
     def on_option_toggled(self, check_option, *data):
@@ -87,7 +115,7 @@ class NotebookDomains(Gtk.Notebook):
         option.set_active(check_option.get_active())
 
 
-    def on_counter_toggled(self, check_counter, *data):
+    def on_checkbox_toggled(self, check_counter, *data):
         assert len(data) == 1
         counter = data[0]
         counter.set_active(check_counter.get_active())
@@ -101,7 +129,7 @@ class NotebookDomains(Gtk.Notebook):
         for ctrs in counters.values():
             for counter in ctrs:
                 self.checkboxes[counter.name].connect("toggled",
-                                                      self.on_counter_toggled, counter)
+                                                      self.on_checkbox_toggled, counter)
                 self.checkboxes[counter.name].set_active(counter.active)
 
 
@@ -135,7 +163,7 @@ class MainWindow(Gtk.Window):
         self.add(self.box)
 
         # Add notebook with the counters
-        self.notebook_domains = NotebookDomains(self.options, self.domains, self)
+        self.notebook_domains = NotebookDomains(self.options, self.domains, self.metrics, self)
         self.box.pack_start(self.notebook_domains, True, True, 0)
 
         self.notebook_domains.set_size_request(-1, 300)
@@ -480,4 +508,3 @@ def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_a
     # Run!
     Gtk.main()
 
-# vim:set backspace=2 tabstop=4 shiftwidth=4 textwidth=120 foldmethod=marker expandtab:

@@ -333,20 +333,13 @@ def get_metrics(counters):
                                     C.cast(events, C.POINTER(CUPTI.event_t)))
 
         metric_counters = []
-        for _event in events:
-            event = _get_elem(lambda e: e.id == _event,
+        for event_id in events:
+            event = _get_elem(lambda e: e.id == event_id,
                               counters_list)
 
-            assert event != None, 'Event %d not in metric_counter list' % _event
+            assert event != None, 'Event %d not in metric_counter list' % event_id
             metric_counters.append(event)
 
-        #for event in events:
-        #    nbytes = C.c_size_t(MAX_STRING_LEN)
-        #    CUPTI.cuptiEventGetAttribute(event,
-        #                                 CUPTI.event_attr.NAME,
-        #                                 C.byref(nbytes),
-        #                                 p)
-        #    event_ids.append(p.value)
 
         # Create a new Metric
         m = Metric(name, description, category, metric, value_kind,
