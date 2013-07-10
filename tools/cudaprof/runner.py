@@ -154,8 +154,11 @@ def launch_groups(cmd, args, options, groups, metrics, progress = None, **kwargs
     aggregate_mode = _get_elem(lambda opt: opt.name == 'countermodeaggregate',
                                options) != None
 
-    counters = { counter.name: counter for group in groups
-                                       for counter in group }
+    counters = {}
+
+    for group in groups:
+        for counter in group:
+            counters[counter.name] = counter
 
     counter_names = [ counter.name for group in groups
                                    for counter in group ]

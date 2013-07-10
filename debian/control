@@ -7,7 +7,7 @@ Standards-Version: 3.9.4
 
 Package: python-cudaprof
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, libcuda1, libcupti4 | libcupti5, gir1.2-gtk-3.0
+Depends: ${misc:Depends}, ${python:Depends}, libcuda1, libcupti4 | libcupti5.0, gir1.2-gtk-3.0
 Description: CUDA Profiler Tools
  Python tools and GUI to collect, manage and analyze performance counters from
  the CUDA command-line profiler.
