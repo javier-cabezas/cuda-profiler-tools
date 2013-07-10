@@ -1,3 +1,18 @@
+cuda-profiler-tools (0.5.1-1) unstable; urgency=low
+
+  * New upstream version
+  * Add new subcommand to print the rounds of runs needed to compute the
+    requested counters/metrics
+
+ -- Javier Cabezas <javier.cabezas@gmail.com>  Wed, 10 Jul 2013 14:01:00 +0200
+
+cuda-profiler-tools (0.5.0-1) unstable; urgency=low
+
+  * New upstream version.
+  * Added support for metrics
+
+ -- Javier Cabezas <javier.cabezas@gmail.com>  Tue, 17 Apr 2013 20:04:46 +0100
+
 cuda-profiler-tools (0.3.0-1) unstable; urgency=low
 
   * New upstream version.

@@ -55,6 +55,33 @@ def do_template(args):
     io.put_conf_to_file(OPTION_CONF_FILE, options, counters, metrics)
 
 
+def do_dependencies(args):
+    OPTION_CONF_FILE = args['conf']
+
+    # Initialize CUDA
+    cuda.init()
+
+    # Create counters
+    options = cuda.get_options()
+    # Create counters
+    counters = cuda.get_counters()
+    # Create metrics
+    metrics = cuda.get_metrics(counters)
+    # Read counters from configuration file
+    options_conf, counters_conf, metrics_conf = io.get_conf_from_file(OPTION_CONF_FILE)
+
+    # Merged options with configuration file
+    cudaprof.init_options(options, options_conf)
+    # Merged counters with configuration file
+    cudaprof.init_counters(counters, counters_conf)
+    # Merged metrics with configuration file
+    cudaprof.init_metrics(metrics, metrics_conf)
+
+    import cudaprof.gui.console as gui
+
+    gui.start(options, counters, metrics, None, None, None, None, True)
+
+
 def do_profile(args):
     OPTION_CMD       = args['cmdline']
     OPTION_CMD_ARGS  = ' '.join(args['args'])
@@ -91,12 +118,11 @@ def do_profile(args):
     else:
         import cudaprof.gui.console as gui
 
-    gui.start(options, counters, metrics, OPTION_CONF_FILE, OPTION_CMD, OPTION_CMD_ARGS, OPTION_OUT_FILE_PATTERN)
+    gui.start(options, counters, metrics, OPTION_CONF_FILE, OPTION_CMD, OPTION_CMD_ARGS, OPTION_OUT_FILE_PATTERN, False)
 
 
 if __name__=="__main__":
     import argparse
-    import subprocess as proc
 
     action = None
     def set_action(val):
@@ -116,6 +142,14 @@ if __name__=="__main__":
                           help = 'template configuration file to be generated')
 
     parser_t.set_defaults(func = do_template)
+
+    parser_d = subparsers.add_parser('deps', help = 'Compute counter dependencies only')
+
+    parser_d.add_argument('-c', '--conf', metavar='CONF_FILE', dest = 'conf', action='store',
+                          default = None,
+                          help = 'configuration file')
+
+    parser_d.set_defaults(func = do_dependencies)
 
     parser_p = subparsers.add_parser('profile', help = 'profile the given program')
 

@@ -499,7 +499,7 @@ class MainWindow(Gtk.Window):
         buf.insert(buf.get_start_iter(), "%s> END PROFILE\n" % now())
 
 
-def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
+def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern, option_deps_only):
     # Create window
     win = MainWindow(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern)
     win.connect("delete-event", Gtk.main_quit)

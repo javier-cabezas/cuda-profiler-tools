@@ -20,7 +20,7 @@ from cudaprof.common import now
 import cudaprof.cuda   as cuda
 import cudaprof.runner as runner
 
-def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern):
+def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_args, option_out_pattern, option_deps_only):
     # Collect enabled options
     enabled_options = [ option for option in options if option.active == True ]
 
@@ -46,6 +46,12 @@ def start(options, counters, metrics, option_conf_file, option_cmd, option_cmd_a
                 enabled_counters += counter
 
     groups = cuda.get_event_groups(enabled_counters)
+
+    if option_deps_only:
+        for group in groups:
+            print ','.join([ counter.name for counter in group ])
+
+        return
 
     def print_progress(n):
         i = 1
